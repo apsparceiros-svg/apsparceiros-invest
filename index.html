@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>APSPARCEIROS Invest - Portfólio SPE/SCP</title>
+<style>
+body { font-family: Arial, sans-serif; background-color: #121212; color: #E0E0E0; margin: 0; padding: 20px; }
+h1, h2 { color: #FFFFFF; }
+.container { max-width: 1200px; margin: 0 auto; padding: 20px; background-color: #1E1E1E; border-radius: 8px; }
+.grid { display: flex; gap: 20px; }
+.card { background: #2A2A2A; padding: 16px; border-radius: 8px; flex:1; }
+label { display:block; margin-top:10px; }
+input, select { width: 100%; padding: 6px; margin-top:5px; border-radius:5px; border:none; background:#121212; color:#E0E0E0; }
+button { margin-top:12px; padding:8px 12px; background:#007BFF; color:white; border:none; cursor:pointer; border-radius:5px; }
+.result { background:#333; padding:10px; border-radius:5px; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>APSPARCEIROS Invest - Portfólio de 3 Empreendimentos</h1>
+<p>Senha de acesso: <strong>Investidor</strong></p>
+
+<div class="grid">
+<div class="card">
+<h2>Empreendimento 1</h2>
+<label>Nome do projeto:</label><input type="text" value="Residencial Ubatuba Premium">
+<label>VGV (R$):</label><input type="number" value="9600000">
+<label>Custo total (R$):</label><input type="number" value="6750000">
+<label>Investimento (R$):</label><input type="number" value="750000">
+<button onclick="calculate(this)">Calcular</button>
+<div class="result">Resultados aparecerão aqui</div>
+</div>
+
+<div class="card">
+<h2>Empreendimento 2</h2>
+<label>Nome do projeto:</label><input type="text" value="Residencial Caraguá Vista">
+<label>VGV (R$):</label><input type="number" value="8500000">
+<label>Custo total (R$):</label><input type="number" value="6000000">
+<label>Investimento (R$):</label><input type="number" value="700000">
+<button onclick="calculate(this)">Calcular</button>
+<div class="result">Resultados aparecerão aqui</div>
+</div>
+
+<div class="card">
+<h2>Empreendimento 3</h2>
+<label>Nome do projeto:</label><input type="text" value="Residencial Guarujá Prime">
+<label>VGV (R$):</label><input type="number" value="10000000">
+<label>Custo total (R$):</label><input type="number" value="7200000">
+<label>Investimento (R$):</label><input type="number" value="800000">
+<button onclick="calculate(this)">Calcular</button>
+<div class="result">Resultados aparecerão aqui</div>
+</div>
+</div>
+
+<script>
+function calculate(btn){
+  const card = btn.parentElement;
+  const vgv = parseFloat(card.querySelectorAll('input')[1].value);
+  const cost = parseFloat(card.querySelectorAll('input')[2].value);
+  const investment = parseFloat(card.querySelectorAll('input')[3].value);
+  const roi = ((vgv - cost)/investment)*100;
+  const payback = (investment/(vgv - cost))*12;
+  card.querySelector('.result').innerHTML = `<strong>ROI:</strong> ${roi.toFixed(2)}%<br><strong>Payback:</strong> ${payback.toFixed(1)} meses`;
+}
+</script>
+</div>
+</body>
+</html>
