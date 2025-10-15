@@ -17,20 +17,19 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
 .sidebar{width:340px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:14px;overflow:auto}
 .content{flex:1;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));border-radius:12px;padding:14px;overflow:auto}
 .section-title{font-weight:700;color:var(--gold);margin-bottom:8px}
-.project-card{background:var(--card);padding:12px;border-radius:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+.project-card{background:var(--card);padding:12px;border-radius:10px;margin-bottom:12px;display:flex;gap:12px;align-items:flex-start;border:1px solid rgba(255,255,255,0.03);cursor:pointer}
+.project-card .info{flex:1}
+.project-card .info label{display:block;font-size:12px;color:var(--muted);margin-top:6px}
+.project-card .info input{width:100%;padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--accent);margin-bottom:4px}
 .small{font-size:12px;color:var(--muted)}
 .kpi{display:flex;gap:8px;margin-top:8px}
 .kpi .item{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:8px;border-radius:8px;min-width:90px;text-align:center}
 .kpi .value{font-weight:700;color:var(--gold);margin-top:6px}
+.controls label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
+.controls input[type=text],.controls input[type=number],.controls select{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--accent)}
 .button{background:var(--gold);color:#0b0b0b;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:700}
 .button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--accent)}
 .card{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:12px;border-radius:10px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.02)}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;justify-content:center;align-items:center;z-index:100;display:none}
-.modal .modal-content{background:var(--panel);padding:18px;border-radius:12px;width:420px;max-height:90vh;overflow:auto}
-.modal .modal-content h3{margin-top:0;color:var(--gold)}
-.modal .modal-content label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
-.modal .modal-content input{width:100%;padding:8px;border-radius:6px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--accent)}
-.modal .modal-footer{margin-top:12px;display:flex;justify-content:flex-end;gap:8px}
 .tooltip{position:relative;display:inline-block}
 .tooltip .tt{visibility:hidden;width:260px;background:#0c0c0c;color:var(--muted);text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:10;bottom:130%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .12s}
 .tooltip:hover .tt{visibility:visible;opacity:1}
@@ -57,18 +56,6 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
   </div>
 </div>
 
-<!-- Modal de Edição -->
-<div id="editModal" class="modal">
-  <div class="modal-content">
-    <h3>Editar Projeto</h3>
-    <div id="modalFields"></div>
-    <div class="modal-footer">
-      <button id="btnCloseModal" class="button ghost">Cancelar</button>
-      <button id="btnSaveModal" class="button">Salvar</button>
-    </div>
-  </div>
-</div>
-
 <div class="container" id="app" style="display:none">
   <aside class="sidebar">
     <div class="section-title">Portfólio</div>
@@ -81,6 +68,8 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
       </div>
       <div class="controls" style="margin-top:10px">
         <label>Busca</label><input id="search" type="text" placeholder="Pesquisar projeto...">
+        <label class="small">Mostrar</label>
+        <select id="showIndicators"><option value="all">Todos</option><option value="vgv">VGV</option><option value="irr">TIR</option></select>
         <div style="display:flex;gap:8px;margin-top:10px">
           <button id="btnExport" class="button">Exportar JSON</button>
           <button id="btnReset" class="button ghost">Restaurar</button>
@@ -94,9 +83,10 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
     <div style="display:flex;gap:12px;align-items:center">
       <div style="flex:1">
         <h2 id="panelTitle">Dashboard</h2>
-        <div class="small">Clique no projeto para editar e atualizar métricas.</div>
+        <div class="small">Edite os projetos e clique em salvar</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
+        <div class="tooltip"><button id="btnHelp" class="button ghost">Legenda</button><div class="tt"><strong>ROI</strong>: retorno sobre o capital investido.<br><strong>TIR</strong>: taxa interna de retorno anualizada.<br><strong>Payback</strong>: meses para recuperar o aporte.</div></div>
         <button id="btnDownloadCsv" class="button ghost">Download CSV</button>
         <button id="btnPublish" class="button">Salvar alterações</button>
       </div>
@@ -116,11 +106,13 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
             <div style="flex:1"><canvas id="chartPortfolio" height="120"></canvas></div>
             <div style="width:220px">
               <div class="kpi"><div class="item"><div class="small">ROI médio</div><div class="value" id="avgRoi">--</div></div><div class="item"><div class="small">TIR média</div><div class="value" id="avgIrr">--</div></div></div>
-              <div style="margin-top:10px" class="small">Clique num projeto na lateral para editar.</div>
+              <div style="margin-top:10px" class="small">Clique num projeto no menu lateral para ver detalhes.</div>
             </div>
           </div>
         </div>
+
         <div id="detailArea"></div>
+
       </section>
 
       <aside>
@@ -133,13 +125,19 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
             <tr><td class="small">Payback</td><td class="small">Meses para recuperar investimento</td></tr>
           </tbody></table>
         </div>
+
+        <div class="card">
+          <div class="section-title">Cap Table (exemplo)</div>
+          <div class="small">Incorporador: 50%<br>Terrenista: 20%<br>Investidores: 30%</div>
+        </div>
+
       </aside>
     </div>
   </main>
 </div>
 
 <script>
-// --- Dados ---
+// dados iniciais
 let projects = [
   {id:1,name:"Residencial Ubatuba Premium",city:"Ubatuba - SP",units:30,area:80,price_m2:7000,cost_m2:2800,months:24,sales_per_month:3},
   {id:2,name:"Residencial Caraguá Vista",city:"Caraguá - SP",units:24,area:75,price_m2:6500,cost_m2:2600,months:22,sales_per_month:3},
@@ -269,72 +267,107 @@ function computeProject(p) {
   };
 }
 
-// --- Render sidebar ---
-function renderSidebar(){
+// renderizar sidebar com campos editáveis
+function renderSidebar() {
   const el = document.getElementById('projectsList');
   el.innerHTML = '';
   projects.forEach(p=>{
     const metrics = computeProject(p);
     const div = document.createElement('div');
-    div.className='project-card';
-    div.innerHTML = `<div>${p.name}<br><span class="small">${p.city}</span></div>
+    div.className = 'project-card';
+    const info = document.createElement('div');
+    info.className = 'info';
+
+    info.innerHTML = `
+      <label><strong>Nome</strong></label>
+      <input type="text" value="${p.name}" data-field="name">
+
+      <label><strong>Cidade</strong></label>
+      <input type="text" value="${p.city}" data-field="city">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div>
+          <label>Unidades</label>
+          <input type="number" value="${p.units}" data-field="units">
+        </div>
+        <div>
+          <label>Área (m²)</label>
+          <input type="number" value="${p.area}" data-field="area">
+        </div>
+        <div>
+          <label>Preço/m²</label>
+          <input type="number" value="${p.price_m2}" data-field="price_m2">
+        </div>
+        <div>
+          <label>Custo/m²</label>
+          <input type="number" value="${p.cost_m2}" data-field="cost_m2">
+        </div>
+        <div>
+          <label>Meses</label>
+          <input type="number" value="${p.months}" data-field="months">
+        </div>
+        <div>
+          <label>Vendas/mês</label>
+          <input type="number" value="${p.sales_per_month}" data-field="sales_per_month">
+        </div>
+      </div>
+
       <div class="kpi">
         <div class="item"><div class="small">VGV</div><div class="value">${metrics.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
         <div class="item"><div class="small">ROI</div><div class="value">${metrics.roi.toFixed(1)}%</div></div>
         <div class="item"><div class="small">TIR</div><div class="value">${(metrics.irrAnnual*100).toFixed(1)}%</div></div>
-      </div>`;
-    div.addEventListener('click',()=>openModal(p.id));
+      </div>
+    `;
+
+    div.appendChild(info);
+    const chartCanvas = document.createElement('canvas');
+    chartCanvas.width = 100;
+    chartCanvas.height = 40;
+    div.appendChild(chartCanvas);
+
+    // listener para atualizar valores ao alterar
+    info.querySelectorAll('input').forEach(input=>{
+      input.addEventListener('input', ()=>{
+        const field = input.dataset.field;
+        const val = input.type==='number'?Number(input.value):input.value;
+        p[field] = val;
+        renderSidebar();
+        updatePortfolioChart();
+      });
+    });
+
     el.appendChild(div);
+
+    // mini chart
+    const ctx = chartCanvas.getContext('2d');
+    new Chart(ctx, {
+      type:'line',
+      data:{ labels:metrics.net.map((_,i)=>i+1), datasets:[{data:metrics.net,fill:true,borderColor:'#c9a84b',backgroundColor:'rgba(201,168,75,0.08)',tension:0.3,pointRadius:0}]},
+      options:{responsive:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{display:false},y:{display:false}}}
+    });
   });
+
   updatePortfolioChart();
 }
 
-// --- Modal ---
-let currentEditingId=null;
-function openModal(id){
-  currentEditingId=id;
-  const p = projects.find(x=>x.id===id);
-  const modalFields=document.getElementById('modalFields');
-  modalFields.innerHTML='';
-  for(const key of ['name','city','units','area','price_m2','cost_m2','months','sales_per_month']){
-    const label=document.createElement('label');
-    label.textContent=key.charAt(0).toUpperCase() + key.slice(1).replace('_',' ');
-    const input=document.createElement('input');
-    input.value=p[key];
-    input.dataset.field=key;
-    if(typeof p[key]==='number') input.type='number'; else input.type='text';
-    modalFields.appendChild(label);
-    modalFields.appendChild(input);
-  }
-  document.getElementById('editModal').style.display='flex';
-}
-document.getElementById('btnCloseModal').addEventListener('click',()=>document.getElementById('editModal').style.display='none');
-document.getElementById('btnSaveModal').addEventListener('click',()=>{
-  const p = projects.find(x=>x.id===currentEditingId);
-  document.querySelectorAll('#modalFields input').forEach(input=>{
-    const val=input.type==='number'?Number(input.value):input.value;
-    p[input.dataset.field]=val;
-  });
-  document.getElementById('editModal').style.display='none';
-  renderSidebar();
-});
-
-// --- Eventos ---
+// ===== Eventos =====
 document.getElementById('btnLogin').addEventListener('click',()=>{
   const v=document.getElementById('pwd').value;
   if(v===PASSWORD){
     document.getElementById('loginModal').style.display='none';
     document.getElementById('app').style.display='flex';
-    const saved=localStorage.getItem('aps_projects');
+    const saved = localStorage.getItem('aps_projects');
     if(saved) try{projects=JSON.parse(saved);}catch(e){}
     renderSidebar();
   }else alert('Senha incorreta');
 });
+
 document.getElementById('btnExport').addEventListener('click',exportJson);
 document.getElementById('btnPublish').addEventListener('click',saveAll);
 document.getElementById('btnReset').addEventListener('click',()=>{if(confirm('Restaurar valores iniciais?')){localStorage.removeItem('aps_projects');location.reload();}});
 document.getElementById('btnNew').addEventListener('click',()=>{const id=projects.length+1;projects.push({id:id,name:'Novo Empreendimento '+id,city:'Cidade',units:10,area:70,price_m2:5000,cost_m2:2000,months:18,sales_per_month:2});renderSidebar();});
 document.getElementById('btnDownloadCsv').addEventListener('click',downloadCsv);
+
 window.addEventListener('load',()=>{const saved=localStorage.getItem('aps_projects');if(saved)try{projects=JSON.parse(saved);}catch(e){}});
 </script>
 </body>
