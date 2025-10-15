@@ -279,23 +279,46 @@ function renderSidebar(){
     const info=document.createElement('div'); info.className='info';
     
     // Campos editáveis
-    info.innerHTML=`
-      <input type="text" value="${p.name}" data-field="name" style="width:100%;font-weight:600;margin-bottom:4px">
-      <input type="text" value="${p.city}" data-field="city" style="width:100%;margin-bottom:4px">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <input type="number" value="${p.units}" data-field="units" placeholder="Unidades">
-        <input type="number" value="${p.area}" data-field="area" placeholder="Área m²">
-        <input type="number" value="${p.price_m2}" data-field="price_m2" placeholder="Preço/m²">
-        <input type="number" value="${p.cost_m2}" data-field="cost_m2" placeholder="Custo/m²">
-        <input type="number" value="${p.months}" data-field="months" placeholder="Meses">
-        <input type="number" value="${p.sales_per_month}" data-field="sales_per_month" placeholder="Vendas/mês">
-      </div>
-      <div class="kpi">
-        <div class="item"><div class="small">VGV</div><div class="value">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
-        <div class="item"><div class="small">ROI</div><div class="value">${d.roi.toFixed(1)}%</div></div>
-        <div class="item"><div class="small">TIR</div><div class="value">${(d.irrAnnual*100).toFixed(1)}%</div></div>
-      </div>
-    `;
+    info.innerHTML = `
+  <label><strong>Nome</strong></label>
+  <input type="text" value="${p.name}" data-field="name" style="width:100%;margin-bottom:4px">
+
+  <label><strong>Cidade</strong></label>
+  <input type="text" value="${p.city}" data-field="city" style="width:100%;margin-bottom:4px">
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div>
+      <label>Unidades</label>
+      <input type="number" value="${p.units}" data-field="units" placeholder="Unidades">
+    </div>
+    <div>
+      <label>Área (m²)</label>
+      <input type="number" value="${p.area}" data-field="area" placeholder="Área m²">
+    </div>
+    <div>
+      <label>Preço/m²</label>
+      <input type="number" value="${p.price_m2}" data-field="price_m2" placeholder="Preço/m²">
+    </div>
+    <div>
+      <label>Custo/m²</label>
+      <input type="number" value="${p.cost_m2}" data-field="cost_m2" placeholder="Custo/m²">
+    </div>
+    <div>
+      <label>Meses</label>
+      <input type="number" value="${p.months}" data-field="months" placeholder="Meses">
+    </div>
+    <div>
+      <label>Vendas/mês</label>
+      <input type="number" value="${p.sales_per_month}" data-field="sales_per_month" placeholder="Vendas/mês">
+    </div>
+  </div>
+  
+  <div class="kpi">
+    <div class="item"><div class="small">VGV</div><div class="value">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="item"><div class="small">ROI</div><div class="value">${d.roi.toFixed(1)}%</div></div>
+    <div class="item"><div class="small">TIR</div><div class="value">${(d.irrAnnual*100).toFixed(1)}%</div></div>
+  </div>
+`;
     
     // Eventos de edição
     info.querySelectorAll('input').forEach(inp=>{
