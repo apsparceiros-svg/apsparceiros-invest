@@ -1,10 +1,7 @@
 # APSPARCEIROS Invest - Dashboard Premium (Black + Gold)
 
-Template interativo para apresentação de portfólio imobiliário (SPE / SCP).
-Proteção por senha (client-side) e cálculo no navegador (TIR, VPL, ROI, Payback).
+Versão pronta para GitHub Pages.
 
-Instruções:
-- Suba a pasta no GitHub e ative GitHub Pages (branch main, root).
-- A página pedirá senha: `Investidor`.
-- Os dados podem ser salvos no localStorage e exportados como JSON para commit.
-
+- Senha de acesso: `Investidor`
+- Edite projetos, salve no navegador (localStorage) e exporte JSON para commitar.
+- Para publicar: suba os arquivos na branch `main` e ative GitHub Pages (root).
