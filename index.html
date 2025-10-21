@@ -202,17 +202,25 @@ function computeProject(p) {
   const months = p.months;
   const price_unit = p.area * p.price_m2;
   const VGV = p.units * price_unit;
-  const salesMonths = Math.ceil(p.units / p.sales_per_month);
+
+  // --- CONFIGURAÇÕES ---
+  const preLaunchMonths = p.pre_launch || 3;    // meses antes do lançamento
+  const launchMonths = p.launch || 2;           // meses de lançamento
+  const startSales = preLaunchMonths + launchMonths + 1;
+
+  const entryPercent = 0.30;
+  const entryMonths = 6;
+  const remainingPercent = 0.70;
 
   const receipts = Array(months).fill(0);
   const investments = Array(months).fill(0);
   const costs = Array(months).fill(0);
 
-  const incc = 0.0045; // índice de correção
+  // --- Construção ---
+  const incc = 0.0045;
   const den = (months * (months + 1)) / 2;
   const totalConstruction = p.units * p.area * p.cost_m2;
 
-  // Investimentos mensais
   for (let m = 1; m <= months; m++) {
     const prop = m / den;
     const base = totalConstruction * prop;
@@ -220,89 +228,81 @@ function computeProject(p) {
     investments[m - 1] = invested;
   }
 
-  // Recebimentos de vendas (a partir do 6º mês)
-let sold = 0;
-const startSales = 6; // início das vendas (mês 6)
-const entryPercent = 0.30; // 30% de entrada
-const entryMonths = 6; // parcelada em 6x
-const remainingPercent = 0.70; // saldo de 70%
+  // --- Vendas ---
+  let sold = 0;
+  const salesMonths = Math.ceil(p.units / p.sales_per_month);
 
-for (let s = startSales; s <= salesMonths + startSales - 1; s++) {
-  const unitsThis = Math.min(p.sales_per_month, p.units - sold);
-  sold += unitsThis;
+  for (let s = startSales; s <= salesMonths + startSales - 1; s++) {
+    const unitsThis = Math.min(p.sales_per_month, p.units - sold);
+    sold += unitsThis;
 
-  for (let u = 0; u < unitsThis; u++) {
-    const price = price_unit;
+    for (let u = 0; u < unitsThis; u++) {
+      const price = price_unit;
+      const entryInstallment = (entryPercent * price) / entryMonths;
 
-    // 30% de entrada parcelada em 6 meses a partir da venda
-    const entryInstallment = (entryPercent * price) / entryMonths;
-    for (let m = 0; m < entryMonths; m++) {
-      const idx = s - 1 + m;
-      if (idx < months) receipts[idx] += entryInstallment;
-    }
+      // Entrada 30% em 6x
+      for (let m = 0; m < entryMonths; m++) {
+        const idx = s - 1 + m;
+        if (idx < months) receipts[idx] += entryInstallment;
+      }
 
-    // 70% restantes distribuídos até o final do cronograma
-    const startRemaining = s - 1 + entryMonths;
-    const remainingMonths = months - startRemaining;
-    if (remainingMonths > 0) {
-      const remainingInstallment = (remainingPercent * price) / remainingMonths;
-      for (let m = startRemaining; m < months; m++) {
-        receipts[m] += remainingInstallment;
+      // 70% restantes até o final
+      const startRemaining = s - 1 + entryMonths;
+      const remainingMonths = months - startRemaining;
+      if (remainingMonths > 0) {
+        const remainingInstallment = (remainingPercent * price) / remainingMonths;
+        for (let m = startRemaining; m < months; m++) {
+          receipts[m] += remainingInstallment;
+        }
       }
     }
   }
-}
-  // Custos
-  const VGV_total = VGV;
-  const marketingTotal = 0.015 * VGV_total;
+
+  // --- Custos (fixos + marketing + corretagem) ---
+  const marketingTotal = 0.015 * VGV;
   const marketingMonthly = marketingTotal / 12;
-  const brokerTotal = 0.05 * VGV_total;
+  const brokerTotal = 0.05 * VGV;
   const brokerPerUnit = brokerTotal / p.units;
 
   let sold2 = 0;
-  const saleSchedule = [];
   for (let s = 1; s <= salesMonths; s++) {
     const unitsThis = Math.min(p.sales_per_month, p.units - sold2);
     sold2 += unitsThis;
-    saleSchedule.push({ month: s, units: unitsThis });
+    const idx = startSales + s - 2;
+    if (idx < months) costs[idx] += unitsThis * brokerPerUnit;
   }
-  for (const ss of saleSchedule) { costs[ss.month - 1] += ss.units * brokerPerUnit; }
+
   for (let m = 1; m <= months; m++) {
     if (m <= 12) costs[m - 1] += marketingMonthly;
-    if (m === 12) costs[m - 1] += 0.01 * VGV_total;
+    if (m === 12) costs[m - 1] += 0.01 * VGV;
     costs[m - 1] += 8000 + 3000; // custos fixos gerais
     if (m === 1) costs[m - 1] += 0.05 * totalConstruction;
   }
 
-  // Fluxo líquido
+  // --- Fluxo ---
   const net = receipts.map((r, i) => r - investments[i] - costs[i]);
+
+  // Cálculos financeiros
   const irrMonthly = irr(net);
   const irrAnnual = Math.pow(1 + irrMonthly, 12) - 1;
   const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
   const npvVal = net.reduce((s, v, i) => s + v / Math.pow(1 + rate, i), 0);
-
-  // Payback
   let cumul = 0;
   let payback = '--';
-  for (let i = 0; i < net.length; i++) { cumul += net[i]; if (cumul >= 0) { payback = i + 1; break; } }
+  for (let i = 0; i < net.length; i++) {
+    cumul += net[i];
+    if (cumul >= 0) { payback = i + 1; break; }
+  }
 
   const totalNet = net.reduce((s, v) => s + v, 0);
-  const roi = investments.reduce((s, v) => s + v, 0) === 0 ? 0 : (totalNet / investments.reduce((s, v) => s + v, 0)) * 100;
+  const roi = investments.reduce((s, v) => s + v, 0) === 0
+    ? 0
+    : (totalNet / investments.reduce((s, v) => s + v, 0)) * 100;
 
   return {
-    receipts,
-    investments,
-    costs,
-    net,
-    irrMonthly,
-    irrAnnual,
-    npvVal,
-    payback,
-    roi,
-    VGV,
-    totalConstruction,
-    marketingTotal,
-    brokerTotal
+    receipts, investments, costs, net,
+    irrMonthly, irrAnnual, npvVal, payback, roi,
+    VGV, totalConstruction, marketingTotal, brokerTotal
   };
 }
 
