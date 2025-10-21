@@ -220,7 +220,7 @@ function computeProject(p) {
     investments[m - 1] = invested;
   }
 
-  // Recebimentos de vendas (30% entrada em 6x + 70% ao longo do restante)
+  // Recebimentos de vendas (realista: 30% entrada em 6x + 70% até fim da obra)
 let sold = 0;
 for (let s = 1; s <= salesMonths; s++) {
   const unitsThis = Math.min(p.sales_per_month, p.units - sold);
@@ -232,14 +232,14 @@ for (let s = 1; s <= salesMonths; s++) {
     const entryMonths = 6;
     const remainingPercent = 0.70;
 
-    // 30% de entrada parcelada em 6 meses a partir do mês da venda
+    // 30% de entrada parcelada em 6 meses após a venda
     const entryInstallment = (entryPercent * price) / entryMonths;
     for (let m = 0; m < entryMonths; m++) {
       const idx = s - 1 + m;
       if (idx < months) receipts[idx] += entryInstallment;
     }
 
-    // 70% restantes distribuídos ao longo dos meses restantes do projeto
+    // 70% restantes parcelados do fim da entrada até o fim da obra
     const startRemaining = s - 1 + entryMonths;
     const remainingMonths = months - startRemaining;
     if (remainingMonths > 0) {
