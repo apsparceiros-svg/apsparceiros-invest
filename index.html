@@ -64,7 +64,6 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
   <div class="meta">Dashboard · Portfólio · Proteção</div>
 </header>
 
-<!-- Login Modal -->
 <div id="loginModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:50">
   <div style="background:#0b0b0b;padding:22px;border-radius:10px;width:420px;border:1px solid rgba(255,255,255,0.04)">
     <h3 style="margin-top:0;color:var(--gold)">Acesso ao Painel</h3>
@@ -81,7 +80,6 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
   <aside class="sidebar">
     <div class="section-title">Portfólio</div>
     <div id="projectsList"></div>
-
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div><strong>Filtrar</strong><div class="small">por indicador</div></div>
@@ -91,18 +89,17 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
         <label>Busca</label><input id="search" type="text" placeholder="Pesquisar projeto...">
         <label class="small">Mostrar</label>
         <select id="showIndicators"><option value="all">Todos</option><option value="vgv">VGV</option><option value="irr">TIR</option></select>
-
         <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0">
-
         <div><strong>Condições de Venda</strong></div>
         <label>Desconto Pré-lançamento (%)</label>
         <input id="discountPre" type="number" min="0" max="100" step="0.1" value="10">
         <label>Desconto Lançamento (%)</label>
         <input id="discountLaunch" type="number" min="0" max="100" step="0.1" value="5">
+        <label>% Entrada</label>
+        <input id="entradaPct" type="number" min="0" max="100" step="0.1" value="30">
         <label>Parcelas do saldo (nº)</label>
         <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
-        <div class="small" style="margin-top:6px">30% é pago em 6x a partir do mês da venda; o restante (70%) é pago em X parcelas.</div>
-
+        <div class="small" style="margin-top:6px">Entrada é paga em X meses; o restante é dividido nas parcelas configuradas.</div>
         <div style="display:flex;gap:8px;margin-top:10px">
           <button id="btnExport" class="button">Exportar JSON</button>
           <button id="btnReset" class="button ghost">Restaurar</button>
@@ -119,12 +116,12 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
         <div class="small">Edite os projetos e clique em salvar</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <div class="tooltip"><button id="btnHelp" class="button ghost">Legenda</button><div class="tt"><strong>ROI</strong>: retorno sobre o capital investido.<br><strong>TIR</strong>: taxa interna de retorno anualizada.<br><strong>Payback</strong>: meses para recuperar o aporte.</div></div>
+        <div class="tooltip"><button id="btnHelp" class="button ghost">Legenda</button>
+        <div class="tt"><strong>ROI</strong>: retorno sobre o capital investido.<br><strong>TIR</strong>: taxa interna de retorno anualizada.<br><strong>Payback</strong>: meses para recuperar o aporte.</div></div>
         <button id="btnDownloadCsv" class="button ghost">Download CSV</button>
         <button id="btnPublish" class="button">Salvar alterações</button>
       </div>
     </div>
-
     <div style="display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:12px">
       <section>
         <div class="card">
@@ -146,16 +143,19 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
             </div>
           </div>
         </div>
-
         <div id="detailArea"></div>
       </section>
 
       <aside>
         <div class="card">
           <div class="section-title">Indicadores rápidos</div>
-          <canvas id="chartIndicators" height="280"></canvas>
+          <table style="width:100%"><tbody>
+            <tr><td class="small">VGV</td><td class="small">Valor Geral de Vendas</td></tr>
+            <tr><td class="small">ROI</td><td class="small">Retorno sobre o capital</td></tr>
+            <tr><td class="small">TIR</td><td class="small">Taxa interna de retorno</td></tr>
+            <tr><td class="small">Payback</td><td class="small">Meses para recuperar investimento</td></tr>
+          </tbody></table>
         </div>
-
         <div class="card">
           <div class="section-title">Cap Table (exemplo)</div>
           <div class="small">Incorporador: 50%<br>Terrenista: 20%<br>Investidores: 30%</div>
@@ -177,112 +177,78 @@ const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 
 // ===== Configurações de venda =====
 const cfgKey = 'aps_sale_cfg';
-let saleCfg = JSON.parse(localStorage.getItem(cfgKey)) || { discountPre:10, discountLaunch:5, parcelasRestantes:24 };
+let saleCfg = { discountPre:10, discountLaunch:5, parcelasRestantes:24, entradaPct:30 };
 
-// ===== Funções de cálculo =====
-function calcVGV(p){ return p.units*p.area*p.price_m2; }
-function calcCost(p){ return p.units*p.area*p.cost_m2; }
-function calcROI(p){ return ((calcVGV(p)-calcCost(p))/calcCost(p))*100; }
-function calcPayback(p){ return Math.ceil(calcCost(p)/(calcVGV(p)/p.months)); }
-function calcTIR(p){ return calcROI(p)/p.months*12; }
+function loadCfg(){
+  const s = localStorage.getItem(cfgKey);
+  if(s) try { saleCfg = Object.assign(saleCfg, JSON.parse(s)); } catch(e){}
+  document.getElementById('discountPre').value = saleCfg.discountPre;
+  document.getElementById('discountLaunch').value = saleCfg.discountLaunch;
+  document.getElementById('entradaPct').value = saleCfg.entradaPct;
+  document.getElementById('parcelasRestantes').value = saleCfg.parcelasRestantes;
+}
+function saveCfg(){
+  saleCfg.discountPre = Number(document.getElementById('discountPre').value) || 0;
+  saleCfg.discountLaunch = Number(document.getElementById('discountLaunch').value) || 0;
+  saleCfg.entradaPct = Math.min(100, Math.max(0, Number(document.getElementById('entradaPct').value)||30));
+  saleCfg.parcelasRestantes = Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes').value) || 24));
+  localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
+  renderSidebar();
+}
 
-// ===== Renderizar projetos =====
-function renderProjects(){
+// ===== Login =====
+document.getElementById('btnLogin').addEventListener('click',()=>{
+  const val = document.getElementById('pwd').value;
+  if(val===PASSWORD){document.getElementById('loginModal').style.display='none';document.getElementById('app').style.display='flex';loadCfg();renderSidebar();}
+  else alert('Senha incorreta!');
+});
+
+// ===== Renderização lateral =====
+function renderSidebar(){
   const list = document.getElementById('projectsList');
-  list.innerHTML="";
+  list.innerHTML='';
   projects.forEach((p,i)=>{
-    const card = document.createElement('div');
-    card.className='project-card';
-    card.innerHTML=`<div class="info"><strong>${p.name}</strong><div class="small">${p.city}</div></div>`;
-    card.onclick=()=>showDetail(p);
-    list.appendChild(card);
+    const div = document.createElement('div');
+    div.className='project-card';
+    div.innerHTML=`<div class="info"><strong>${p.name}</strong><div class="small">${p.city}</div></div>`;
+    div.addEventListener('click',()=>selectProject(i));
+    list.appendChild(div);
   });
 }
 
-// ===== Detalhes do projeto =====
-function showDetail(p){
-  const area = document.getElementById('detailArea');
-  area.innerHTML=`<div class="card">
-  <div style="display:flex;justify-content:space-between;align-items:center">
-    <div><strong>${p.name} — Indicadores</strong></div>
-  </div>
-  <canvas id="chartDetail" height="180"></canvas>
-  <div class="kpi" style="margin-top:8px">
-    <div class="item"><div class="small">VGV</div><div class="value">R$ ${calcVGV(p).toLocaleString()}</div></div>
-    <div class="item"><div class="small">ROI</div><div class="value">${calcROI(p).toFixed(1)}%</div></div>
-    <div class="item"><div class="small">TIR</div><div class="value">${calcTIR(p).toFixed(1)}%</div></div>
-    <div class="item"><div class="small">Payback</div><div class="value">${calcPayback(p)} meses</div></div>
-  </div>
-  </div>`;
-
-  const ctx = document.getElementById('chartDetail').getContext('2d');
-  new Chart(ctx,{type:'bar',
-    data:{
-      labels:['VGV','ROI (%)','TIR (%)','Payback (meses)'],
-      datasets:[{label:p.name,data:[calcVGV(p),calcROI(p),calcTIR(p),calcPayback(p)],backgroundColor:colors[0]}]
-    },
-    options:{
-      plugins:{legend:{display:false}},
-      scales:{y:{beginAtZero:true}}
-    }
-  });
+// ===== Funções financeiras simplificadas =====
+function computeProject(p){
+  const totalUnits=p.units;
+  const price=p.price_m2*p.area;
+  const cost=p.cost_m2*p.area;
+  const revenue=totalUnits*price*(1-(saleCfg.discountPre+saleCfg.discountLaunch)/100);
+  const capInvested=totalUnits*cost;
+  const roi=((revenue-capInvested)/capInvested)*100;
+  const irr=Math.pow(revenue/capInvested,1/(p.months/12))-1;
+  return {revenue,capInvested,roi,irr};
 }
 
-// ===== Dashboard geral =====
-function renderDashboard(){
-  const totalVgv = projects.reduce((a,p)=>a+calcVGV(p),0);
-  document.getElementById('totalVgv').innerText='R$ '+totalVgv.toLocaleString();
-
-  const avgRoi = projects.reduce((a,p)=>a+calcROI(p),0)/projects.length;
-  document.getElementById('avgRoi').innerText=avgRoi.toFixed(1)+'%';
-  const avgIrr = projects.reduce((a,p)=>a+calcTIR(p),0)/projects.length;
-  document.getElementById('avgIrr').innerText=avgIrr.toFixed(1)+'%';
-
-  const ctx = document.getElementById('chartPortfolio').getContext('2d');
-  new Chart(ctx,{type:'doughnut',
-    data:{
-      labels:projects.map(p=>p.name),
-      datasets:[{data:projects.map(p=>calcVGV(p)),backgroundColor:colors}]
-    },
-    options:{plugins:{tooltip:{callbacks:{label:function(i){return i.label+': R$ '+i.raw.toLocaleString();}}}}}
-  });
-
-  const ctx2 = document.getElementById('chartIndicators').getContext('2d');
-  new Chart(ctx2,{type:'bar',
-    data:{
-      labels:projects.map(p=>p.name),
-      datasets:[
-        {label:'ROI (%)',data:projects.map(p=>calcROI(p)),backgroundColor:'#c9a84b'},
-        {label:'TIR (%)',data:projects.map(p=>calcTIR(p)),backgroundColor:'#2196f3'},
-        {label:'Payback (meses)',data:projects.map(p=>calcPayback(p)),backgroundColor:'#9c27b0'}
-      ]
-    },
-    options:{responsive:true,plugins:{legend:{position:'top'}}}
-  });
+// ===== Seleção de projeto e gráfico =====
+let chartDetail;
+function selectProject(idx){
+  const p = projects[idx];
+  const det = document.getElementById('detailArea');
+  det.innerHTML=`<div class="card"><strong>${p.name} - ${p.city}</strong>
+    <canvas id="chartDetail" height="180"></canvas></div>`;
+  const data = {
+    labels:Array.from({length:p.months},(_,i)=>i+1),
+    datasets:[
+      {label:'Pré-lançamento',data:Array(p.months).fill(p.pre_launch_sales*p.area*p.price_m2*(1-saleCfg.discountPre/100)),backgroundColor:'rgba(201,168,75,0.6)'},
+      {label:'Lançamento',data:Array(p.months).fill(p.launch_sales*p.area*p.price_m2*(1-saleCfg.discountLaunch/100)),backgroundColor:'rgba(181,143,58,0.6)'},
+      {label:'Mensal',data:Array(p.months).fill(p.monthly_sales*p.area*p.price_m2),backgroundColor:'rgba(139,195,74,0.6)'}
+    ]
+  };
+  if(chartDetail) chartDetail.destroy();
+  chartDetail = new Chart(document.getElementById('chartDetail'),{type:'bar',data:data,options:{responsive:true,plugins:{legend:{position:'top'}}}});
 }
 
 // ===== Inicialização =====
-document.getElementById('btnLogin').onclick=()=>{
-  if(document.getElementById('pwd').value===PASSWORD){
-    document.getElementById('loginModal').style.display='none';
-    document.getElementById('app').style.display='flex';
-    renderProjects();
-    renderDashboard();
-  } else alert('Senha incorreta!');
-};
-
-// Export JSON
-document.getElementById('btnExport').onclick=()=>{ 
-  const dataStr="data:text/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(projects,null,2));
-  const dl = document.createElement('a'); dl.setAttribute('href',dataStr); dl.setAttribute('download','projects.json'); dl.click();
-};
-
-// Reset
-document.getElementById('btnReset').onclick=()=>{
-  if(confirm('Deseja restaurar os dados originais?')){
-    localStorage.removeItem(cfgKey); location.reload();
-  }
-};
+renderSidebar();
 
 </script>
 </body>
