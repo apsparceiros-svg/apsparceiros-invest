@@ -173,10 +173,8 @@ function irr(values, guess = 0.01) {
   const eps = 1e-7;
   const maxIter = 1000;
   let rate = guess;
-
   const npv = r => values.reduce((s, v, i) => s + v / Math.pow(1 + r, i), 0);
   const dnpv = r => values.reduce((s, v, i) => s - i * v / Math.pow(1 + r, i + 1), 0);
-
   for (let i = 0; i < maxIter; i++) {
     const f = npv(rate);
     const df = dnpv(rate);
@@ -185,7 +183,6 @@ function irr(values, guess = 0.01) {
     if (Math.abs(nr - rate) < eps) return rate;
     rate = nr;
   }
-
   let low = -0.999, high = 10;
   for (let i = 0; i < 200; i++) {
     const mid = (low + high) / 2;
@@ -196,20 +193,21 @@ function irr(values, guess = 0.01) {
   return rate;
 }
 
-// ===== Função de cálculo com pré-lançamento e lançamento =====
+// ===== Calcular projeto =====
 function computeProject(p) {
   const months = p.months;
   const price_unit = p.area * p.price_m2;
   const VGV = p.units * price_unit;
-
-  const receipts = Array(months).fill(0);
+  const receiptsPre = Array(months).fill(0);
+  const receiptsLaunch = Array(months).fill(0);
+  const receiptsMonthly = Array(months).fill(0);
   const investments = Array(months).fill(0);
   const costs = Array(months).fill(0);
-
   const incc = 0.0045;
   const den = (months * (months + 1)) / 2;
   const totalConstruction = p.units * p.area * p.cost_m2;
 
+  // Investimentos mensais
   for (let m = 1; m <= months; m++) {
     const prop = m / den;
     const base = totalConstruction * prop;
@@ -221,91 +219,76 @@ function computeProject(p) {
   const entryMonths = 6;
   const remainingPercent = 0.70;
 
-  let sold = 0;
-  let monthIdx = 0;
-
-  function addPhaseReceipts(units) {
-    for (let i = 0; i < units; i++) {
+  function distributeSales(units, startMonth, receiptsArr) {
+    let sold = 0;
+    for (let s = 0; s < units; s++) {
+      // Entrada 30% em 6x
       const entryInstallment = (entryPercent * price_unit) / entryMonths;
       for (let m = 0; m < entryMonths; m++) {
-        if (monthIdx + m < months) receipts[monthIdx + m] += entryInstallment;
+        const idx = startMonth + s + m;
+        if (idx < months) receiptsArr[idx] += entryInstallment;
       }
-      const startRemaining = monthIdx + entryMonths;
-      const remainingMonths = months - startRemaining;
-      if (remainingMonths > 0) {
-        const remInstall = (remainingPercent * price_unit) / remainingMonths;
-        for (let m = startRemaining; m < months; m++) receipts[m] += remInstall;
+    }
+    // Saldo 70% distribuído até o fim
+    const startRemaining = startMonth + entryMonths;
+    const remainingMonths = months - startRemaining;
+    if (remainingMonths > 0) {
+      const remainingInstallment = (remainingPercent * price_unit) / remainingMonths;
+      for (let m = startRemaining; m < months; m++) {
+        receiptsArr[m] += remainingInstallment;
       }
-      sold++;
     }
   }
 
-  addPhaseReceipts(p.pre_launch_sales);
-  monthIdx += 1;
-  addPhaseReceipts(p.launch_sales);
+  distributeSales(p.pre_launch_sales, 0, receiptsPre);
+  distributeSales(p.launch_sales, p.pre_launch_sales, receiptsLaunch);
 
-  for (let m = 0; m < months; m++) {
-    const remainingUnits = Math.min(p.monthly_sales, p.units - sold);
-    if (remainingUnits > 0) {
-      monthIdx = m;
-      addPhaseReceipts(remainingUnits);
-    }
+  // Vendas mensais começam após pré e lançamento
+  const startMonthly = p.pre_launch_sales + p.launch_sales;
+  let soldMonthly = 0;
+  let monthCounter = startMonthly;
+  while (soldMonthly < p.units - startMonthly) {
+    const unitsThisMonth = Math.min(p.monthly_sales, p.units - startMonthly - soldMonthly);
+    distributeSales(unitsThisMonth, monthCounter, receiptsMonthly);
+    soldMonthly += unitsThisMonth;
+    monthCounter++;
+    if (monthCounter >= months) break;
   }
 
+  // Custos
   const marketingTotal = 0.015 * VGV;
   const marketingMonthly = marketingTotal / 12;
   const brokerTotal = 0.05 * VGV;
   const brokerPerUnit = brokerTotal / p.units;
 
-  let sold2 = 0;
-  const saleSchedule = [];
-  const totalSales = p.pre_launch_sales + p.launch_sales + months * p.monthly_sales;
-  const salesUnits = Math.min(totalSales, p.units);
-
-  for (let s = 1; s <= months; s++) {
-    const unitsThis = Math.min(p.monthly_sales, p.units - sold2);
-    sold2 += unitsThis;
-    saleSchedule.push({ month: s, units: unitsThis });
-  }
-  for (const ss of saleSchedule) { costs[ss.month - 1] += ss.units * brokerPerUnit; }
-  for (let m = 1; m <= months; m++) {
-    if (m <= 12) costs[m - 1] += marketingMonthly;
-    if (m === 12) costs[m - 1] += 0.01 * VGV;
-    costs[m - 1] += 8000 + 3000;
-    if (m === 1) costs[m - 1] += 0.05 * totalConstruction;
+  for (let m = 0; m < months; m++) {
+    if (m < 12) costs[m] += marketingMonthly;
+    if (m === 11) costs[m] += 0.01 * VGV;
+    costs[m] += 8000 + 3000;
+    if (m === 0) costs[m] += 0.05 * totalConstruction;
   }
 
+  // Fluxo líquido
+  const receipts = receiptsPre.map((v,i) => v + receiptsLaunch[i] + receiptsMonthly[i]);
   const net = receipts.map((r, i) => r - investments[i] - costs[i]);
   const irrMonthly = irr(net);
   const irrAnnual = Math.pow(1 + irrMonthly, 12) - 1;
   const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
   const npvVal = net.reduce((s, v, i) => s + v / Math.pow(1 + rate, i), 0);
 
+  // Payback
   let cumul = 0;
   let payback = '--';
   for (let i = 0; i < net.length; i++) { cumul += net[i]; if (cumul >= 0) { payback = i + 1; break; } }
-
   const totalNet = net.reduce((s, v) => s + v, 0);
   const roi = investments.reduce((s, v) => s + v, 0) === 0 ? 0 : (totalNet / investments.reduce((s, v) => s + v, 0)) * 100;
 
   return {
-    receipts,
-    investments,
-    costs,
-    net,
-    irrMonthly,
-    irrAnnual,
-    npvVal,
-    payback,
-    roi,
-    VGV,
-    totalConstruction,
-    marketingTotal,
-    brokerTotal
+    receiptsPre, receiptsLaunch, receiptsMonthly, receipts, investments, costs, net, irrMonthly, irrAnnual, npvVal, payback, roi, VGV, totalConstruction, marketingTotal, brokerTotal
   };
 }
 
-// ===== Renderização Sidebar =====
+// ===== Renderização e Gráficos =====
 function renderSidebar(){
   const el=document.getElementById('projectsList'); el.innerHTML='';
   const searchVal=document.getElementById('search').value.toLowerCase();
@@ -315,41 +298,42 @@ function renderSidebar(){
     const div=document.createElement('div'); div.className='project-card';
     const info=document.createElement('div'); info.className='info';
     
-    info.innerHTML=`
-<label><strong>Nome</strong></label><input type="text" value="${p.name}" data-field="name">
-<label><strong>Cidade</strong></label><input type="text" value="${p.city}" data-field="city">
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-<div><label>Unidades</label><input type="number" value="${p.units}" data-field="units"></div>
-<div><label>Área (m²)</label><input type="number" value="${p.area}" data-field="area"></div>
-<div><label>Preço/m²</label><input type="number" value="${p.price_m2}" data-field="price_m2"></div>
-<div><label>Custo/m²</label><input type="number" value="${p.cost_m2}" data-field="cost_m2"></div>
-<div><label>Meses</label><input type="number" value="${p.months}" data-field="months"></div>
-<div><label>Pré-lançamento</label><input type="number" value="${p.pre_launch_sales}" data-field="pre_launch_sales"></div>
-<div><label>Lançamento</label><input type="number" value="${p.launch_sales}" data-field="launch_sales"></div>
-<div><label>Vendas/mês</label><input type="number" value="${p.monthly_sales}" data-field="monthly_sales"></div>
-</div>
-<div class="kpi">
-<div class="item"><div class="small">VGV</div><div class="value">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
-<div class="item"><div class="small">ROI</div><div class="value">${d.roi.toFixed(1)}%</div></div>
-<div class="item"><div class="small">TIR</div><div class="value">${(d.irrAnnual*100).toFixed(1)}%</div></div>
-</div>
+    info.innerHTML = `
+  <label><strong>Nome</strong></label>
+  <input type="text" value="${p.name}" data-field="name">
+  <label><strong>Cidade</strong></label>
+  <input type="text" value="${p.city}" data-field="city">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div><label>Unidades</label><input type="number" value="${p.units}" data-field="units"></div>
+    <div><label>Área (m²)</label><input type="number" value="${p.area}" data-field="area"></div>
+    <div><label>Preço/m²</label><input type="number" value="${p.price_m2}" data-field="price_m2"></div>
+    <div><label>Custo/m²</label><input type="number" value="${p.cost_m2}" data-field="cost_m2"></div>
+    <div><label>Meses</label><input type="number" value="${p.months}" data-field="months"></div>
+    <div><label>Pré-lançamento</label><input type="number" value="${p.pre_launch_sales}" data-field="pre_launch_sales"></div>
+    <div><label>Lançamento</label><input type="number" value="${p.launch_sales}" data-field="launch_sales"></div>
+    <div><label>Vendas/mês</label><input type="number" value="${p.monthly_sales}" data-field="monthly_sales"></div>
+  </div>
+  <div class="kpi">
+    <div class="item"><div class="small">VGV</div><div class="value">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="item"><div class="small">ROI</div><div class="value">${d.roi.toFixed(1)}%</div></div>
+    <div class="item"><div class="small">TIR</div><div class="value">${(d.irrAnnual*100).toFixed(1)}%</div></div>
+  </div>
 `;
     info.querySelectorAll('input').forEach(inp=>{
       inp.addEventListener('input',()=>{
         const field=inp.dataset.field;
-        p[field]=field.includes('units')||field.includes('area')||field.includes('price_m2')||field.includes('cost_m2')||field.includes('months')||field.includes('pre_launch_sales')||field.includes('launch_sales')||field.includes('monthly_sales')?Number(inp.value):inp.value;
-        renderSidebar();
+        if(['units','area','price_m2','cost_m2','months','pre_launch_sales','launch_sales','monthly_sales'].includes(field)) p[field]=Number(inp.value);
+        else p[field]=inp.value;
+        renderSidebar(); if(document.getElementById('detailArea').children.length) selectProject(p.id);
       });
     });
 
-    div.appendChild(info);
-    div.addEventListener('click',()=>selectProject(p.id));
+    div.appendChild(info); div.addEventListener('click',()=>selectProject(p.id));
     el.appendChild(div);
   });
   updatePortfolioChart();
 }
 
-// ===== Funções de gráficos e seleção =====
 let portfolioChart=null;
 function updatePortfolioChart(){
   const totals=projects.map(p=>computeProject(p).VGV);
@@ -376,34 +360,39 @@ function selectProject(id){
       <div style="display:flex;gap:12px;margin-top:12px">
         <div style="flex:1"><canvas id="chartCash${id}" height="140"></canvas></div>
         <div style="width:320px">
-          <div class="card"><div class="small">Resumo</div><div style="margin-top:8px"><strong>ROI:</strong> ${d.roi.toFixed(1)}%<br><strong>TIR (a.a.):</strong> ${(d.irrAnnual*100).toFixed(1)}%<br><strong>VPL (12% a.a.):</strong> ${d.npvVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}<br><strong>Payback:</strong> ${d.payback} meses</div></div>
+          <div class="card"><div class="small">Resumo</div><div style="margin-top:8px"><strong>ROI:</strong> ${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}<br><strong>TIR (a.a.):</strong> ${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}<br><strong>VPL (12% a.a.):</strong> ${d.npvVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}<br><strong>Payback:</strong> ${d.payback} meses</div></div>
+          <div class="card" style="margin-top:12px"><div class="small">Custos</div><div style="margin-top:8px">Custo construção: ${d.totalConstruction.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}<br>Marketing: ${d.marketingTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}<br>Comissão: ${d.brokerTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
         </div>
       </div>
+      <div style="margin-top:12px" class="small">Passe o mouse sobre os pontos do gráfico para ver valores mensais.</div>
     </div>
   `;
   const ctx=document.getElementById('chartCash'+id).getContext('2d');
-  new Chart(ctx,{type:'line',data:{labels:d.net.map((_,i)=>i+1),datasets:[{label:'Fluxo Líquido',data:d.net,borderColor:'#c9a84b',backgroundColor:'rgba(201,168,75,0.08)',fill:true,tension:0.3}]},options:{plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>'R$ '+Number(ctx.raw).toLocaleString('pt-BR')}}},scales:{y:{ticks:{callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}});
+  new Chart(ctx,{type:'line',data:{
+    labels:d.net.map((_,i)=>i+1),
+    datasets:[
+      {label:'Pré-lançamento',data:d.receiptsPre,borderColor:'#ff9800',backgroundColor:'rgba(255,152,0,0.2)',fill:true,tension:0.3},
+      {label:'Lançamento',data:d.receiptsLaunch,borderColor:'#4caf50',backgroundColor:'rgba(76,175,80,0.2)',fill:true,tension:0.3},
+      {label:'Vendas Mensais',data:d.receiptsMonthly,borderColor:'#2196f3',backgroundColor:'rgba(33,150,243,0.2)',fill:true,tension:0.3},
+      {label:'Fluxo Líquido',data:d.net,borderColor:'#c9a84b',backgroundColor:'rgba(201,168,75,0.08)',fill:true,tension:0.3}
+    ]
+  },options:{plugins:{legend:{labels:{color:'#fff'}}}}});
 }
 
-// ===== Eventos =====
-document.getElementById('btnLogin').addEventListener('click',()=>{
-  const v=document.getElementById('pwd').value;
-  if(v===PASSWORD){
-    document.getElementById('loginModal').style.display='none';
-    document.getElementById('app').style.display='flex';
-    const saved=localStorage.getItem('aps_projects');
-    if(saved)try{projects=JSON.parse(saved);}catch(e){}
-    renderSidebar();
-  }else alert('Senha incorreta');
-});
-document.getElementById('btnExport').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(projects,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.json';a.click();URL.revokeObjectURL(url);});
-document.getElementById('btnPublish').addEventListener('click',()=>{localStorage.setItem('aps_projects',JSON.stringify(projects));alert('Alterações salvas no navegador (localStorage).');});
+// ===== Persistência e Eventos =====
+function saveAll(){localStorage.setItem('aps_projects',JSON.stringify(projects));alert('Alterações salvas no navegador (localStorage).');}
+function exportJson(){const blob=new Blob([JSON.stringify(projects,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.json';a.click();URL.revokeObjectURL(url);}
+function downloadCsv(){const rows=['id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales'];projects.forEach(p=>rows.push([p.id,p.name,p.city,p.units,p.area,p.price_m2,p.cost_m2,p.months,p.pre_launch_sales,p.launch_sales,p.monthly_sales].join(',')));const blob=new Blob([rows.join('\n')],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.csv';a.click();URL.revokeObjectURL(url);}
+
+document.getElementById('btnLogin').addEventListener('click',()=>{const v=document.getElementById('pwd').value;if(v===PASSWORD){document.getElementById('loginModal').style.display='none';document.getElementById('app').style.display='flex';const saved=localStorage.getItem('aps_projects');if(saved)try{projects=JSON.parse(saved);}catch(e){}renderSidebar();}else alert('Senha incorreta');});
+document.getElementById('btnExport').addEventListener('click',exportJson);
+document.getElementById('btnPublish').addEventListener('click',saveAll);
 document.getElementById('btnReset').addEventListener('click',()=>{if(confirm('Restaurar valores iniciais?')){localStorage.removeItem('aps_projects');location.reload();}});
 document.getElementById('btnNew').addEventListener('click',()=>{const id=projects.length+1;projects.push({id:id,name:'Novo Empreendimento '+id,city:'Cidade',units:10,area:70,price_m2:5000,cost_m2:2000,months:18,pre_launch_sales:0,launch_sales:0,monthly_sales:2});renderSidebar();});
-document.getElementById('btnDownloadCsv').addEventListener('click',()=>{const rows=['id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales'];projects.forEach(p=>rows.push([p.id,p.name,p.city,p.units,p.area,p.price_m2,p.cost_m2,p.months,p.pre_launch_sales,p.launch_sales,p.monthly_sales].join(',')));const blob=new Blob([rows.join('\n')],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.csv';a.click();URL.revokeObjectURL(url);});
+document.getElementById('btnDownloadCsv').addEventListener('click',downloadCsv);
 
-// ===== Carregar localStorage =====
 window.addEventListener('load',()=>{const saved=localStorage.getItem('aps_projects');if(saved)try{projects=JSON.parse(saved);}catch(e){}});
 </script>
+
 </body>
 </html>
