@@ -64,6 +64,7 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
   <div class="meta">Dashboard · Portfólio · Proteção</div>
 </header>
 
+<!-- Login Modal -->
 <div id="loginModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:50">
   <div style="background:#0b0b0b;padding:22px;border-radius:10px;width:420px;border:1px solid rgba(255,255,255,0.04)">
     <h3 style="margin-top:0;color:var(--gold)">Acesso ao Painel</h3>
@@ -80,6 +81,7 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
   <aside class="sidebar">
     <div class="section-title">Portfólio</div>
     <div id="projectsList"></div>
+
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div><strong>Filtrar</strong><div class="small">por indicador</div></div>
@@ -159,9 +161,9 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
 <script>
 // ===== Dados iniciais =====
 let projects = [
-  {id:1,name:"Residencial Ubatuba Premium",city:"Ubatuba - SP",units:30,area:80,price_m2:7000,cost_m2:2800,months:24,pre_launch_sales:5,launch_sales:10,monthly_sales:3},
-  {id:2,name:"Residencial Caraguá Vista",city:"Caraguá - SP",units:24,area:75,price_m2:6500,cost_m2:2600,months:22,pre_launch_sales:4,launch_sales:8,monthly_sales:3},
-  {id:3,name:"Residencial Guarujá Prime",city:"Guarujá - SP",units:36,area:90,price_m2:7200,cost_m2:3000,months:28,pre_launch_sales:6,launch_sales:12,monthly_sales:4}
+  {id:1,name:"Residencial Ubatuba Premium",city:"Ubatuba - SP",units:30,area:80,price_m2:7000,cost_m2:2800,months:24,pre_launch_sales:2,launch_sales:4,monthly_sales:3},
+  {id:2,name:"Residencial Caraguá Vista",city:"Caraguá - SP",units:24,area:75,price_m2:6500,cost_m2:2600,months:22,pre_launch_sales:1,launch_sales:3,monthly_sales:3},
+  {id:3,name:"Residencial Guarujá Prime",city:"Guarujá - SP",units:36,area:90,price_m2:7200,cost_m2:3000,months:28,pre_launch_sales:3,launch_sales:5,monthly_sales:4}
 ];
 const PASSWORD="Investidor";
 const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
@@ -171,8 +173,10 @@ function irr(values, guess = 0.01) {
   const eps = 1e-7;
   const maxIter = 1000;
   let rate = guess;
+
   const npv = r => values.reduce((s, v, i) => s + v / Math.pow(1 + r, i), 0);
   const dnpv = r => values.reduce((s, v, i) => s - i * v / Math.pow(1 + r, i + 1), 0);
+
   for (let i = 0; i < maxIter; i++) {
     const f = npv(rate);
     const df = dnpv(rate);
@@ -181,6 +185,7 @@ function irr(values, guess = 0.01) {
     if (Math.abs(nr - rate) < eps) return rate;
     rate = nr;
   }
+
   let low = -0.999, high = 10;
   for (let i = 0; i < 200; i++) {
     const mid = (low + high) / 2;
@@ -191,84 +196,113 @@ function irr(values, guess = 0.01) {
   return rate;
 }
 
-// ===== Função de cálculo de fluxo =====
+// ===== Função de cálculo com pré-lançamento e lançamento =====
 function computeProject(p) {
   const months = p.months;
   const price_unit = p.area * p.price_m2;
   const VGV = p.units * price_unit;
+
   const receipts = Array(months).fill(0);
   const investments = Array(months).fill(0);
   const costs = Array(months).fill(0);
 
   const incc = 0.0045;
-  const den = (months*(months+1))/2;
+  const den = (months * (months + 1)) / 2;
   const totalConstruction = p.units * p.area * p.cost_m2;
-  for(let m=1;m<=months;m++){
-    investments[m-1] = totalConstruction*(m/den)*Math.pow(1+incc,m);
+
+  for (let m = 1; m <= months; m++) {
+    const prop = m / den;
+    const base = totalConstruction * prop;
+    const invested = base * Math.pow(1 + incc, m);
+    investments[m - 1] = invested;
   }
 
   const entryPercent = 0.30;
   const entryMonths = 6;
   const remainingPercent = 0.70;
+
+  let sold = 0;
   let monthIdx = 0;
 
-  function addReceipts(units){
-    for(let i=0;i<units;i++){
-      const price = price_unit;
-      const entryInstallment = (entryPercent*price)/entryMonths;
-      for(let m=0;m<entryMonths;m++){
-        if(monthIdx+m < months) receipts[monthIdx+m] += entryInstallment;
+  function addPhaseReceipts(units) {
+    for (let i = 0; i < units; i++) {
+      const entryInstallment = (entryPercent * price_unit) / entryMonths;
+      for (let m = 0; m < entryMonths; m++) {
+        if (monthIdx + m < months) receipts[monthIdx + m] += entryInstallment;
       }
-      const startRemaining = monthIdx+entryMonths;
-      const remainingMonths = months-startRemaining;
-      if(remainingMonths>0){
-        const remInstall = (remainingPercent*price)/remainingMonths;
-        for(let m=startRemaining;m<months;m++) receipts[m] += remInstall;
+      const startRemaining = monthIdx + entryMonths;
+      const remainingMonths = months - startRemaining;
+      if (remainingMonths > 0) {
+        const remInstall = (remainingPercent * price_unit) / remainingMonths;
+        for (let m = startRemaining; m < months; m++) receipts[m] += remInstall;
       }
+      sold++;
     }
   }
 
-  addReceipts(p.pre_launch_sales);
+  addPhaseReceipts(p.pre_launch_sales);
   monthIdx += 1;
-  addReceipts(p.launch_sales);
-  for(let m=0;m<months;m++){
-    let units = Math.min(p.monthly_sales,p.units-(p.pre_launch_sales+p.launch_sales+(m*p.monthly_sales)));
-    if(units>0){ monthIdx = m; addReceipts(units); }
-  }
+  addPhaseReceipts(p.launch_sales);
 
-  // Custos
-  const marketingTotal = 0.015*VGV;
-  const marketingMonthly = marketingTotal/12;
-  const brokerTotal = 0.05*VGV;
-  const brokerPerUnit = brokerTotal/p.units;
-
-  let sold=0;
-  for(let m=0;m<months;m++){
-    if(m<12) costs[m] += marketingMonthly;
-    if(m===11) costs[m] += 0.01*VGV;
-    costs[m] += 8000+3000;
-    if(m===0) costs[m] += 0.05*totalConstruction;
-    if(sold<p.units){
-      let unitsThis = Math.min(p.monthly_sales,p.units-sold);
-      costs[m] += unitsThis*brokerPerUnit;
-      sold += unitsThis;
+  for (let m = 0; m < months; m++) {
+    const remainingUnits = Math.min(p.monthly_sales, p.units - sold);
+    if (remainingUnits > 0) {
+      monthIdx = m;
+      addPhaseReceipts(remainingUnits);
     }
   }
 
-  const net = receipts.map((r,i)=>r-investments[i]-costs[i]);
+  const marketingTotal = 0.015 * VGV;
+  const marketingMonthly = marketingTotal / 12;
+  const brokerTotal = 0.05 * VGV;
+  const brokerPerUnit = brokerTotal / p.units;
+
+  let sold2 = 0;
+  const saleSchedule = [];
+  const totalSales = p.pre_launch_sales + p.launch_sales + months * p.monthly_sales;
+  const salesUnits = Math.min(totalSales, p.units);
+
+  for (let s = 1; s <= months; s++) {
+    const unitsThis = Math.min(p.monthly_sales, p.units - sold2);
+    sold2 += unitsThis;
+    saleSchedule.push({ month: s, units: unitsThis });
+  }
+  for (const ss of saleSchedule) { costs[ss.month - 1] += ss.units * brokerPerUnit; }
+  for (let m = 1; m <= months; m++) {
+    if (m <= 12) costs[m - 1] += marketingMonthly;
+    if (m === 12) costs[m - 1] += 0.01 * VGV;
+    costs[m - 1] += 8000 + 3000;
+    if (m === 1) costs[m - 1] += 0.05 * totalConstruction;
+  }
+
+  const net = receipts.map((r, i) => r - investments[i] - costs[i]);
   const irrMonthly = irr(net);
-  const irrAnnual = Math.pow(1+irrMonthly,12)-1;
-  const rate = Math.pow(1+0.12,1/12)-1;
-  const npvVal = net.reduce((s,v,i)=>s+v/Math.pow(1+rate,i),0);
+  const irrAnnual = Math.pow(1 + irrMonthly, 12) - 1;
+  const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
+  const npvVal = net.reduce((s, v, i) => s + v / Math.pow(1 + rate, i), 0);
 
-  let cumul=0;
-  let payback='--';
-  for(let i=0;i<net.length;i++){ cumul+=net[i]; if(cumul>=0){ payback=i+1; break; } }
+  let cumul = 0;
+  let payback = '--';
+  for (let i = 0; i < net.length; i++) { cumul += net[i]; if (cumul >= 0) { payback = i + 1; break; } }
 
-  const totalNet = net.reduce((s,v)=>s+v,0);
-  const roi = investments.reduce((s,v)=>s+v,0)===0?0:(totalNet/investments.reduce((s,v)=>s+v,0))*100;
+  const totalNet = net.reduce((s, v) => s + v, 0);
+  const roi = investments.reduce((s, v) => s + v, 0) === 0 ? 0 : (totalNet / investments.reduce((s, v) => s + v, 0)) * 100;
 
-  return {receipts,investments,costs,net,irrMonthly,irrAnnual,npvVal,payback,roi,VGV,totalConstruction,marketingTotal,brokerTotal};
+  return {
+    receipts,
+    investments,
+    costs,
+    net,
+    irrMonthly,
+    irrAnnual,
+    npvVal,
+    payback,
+    roi,
+    VGV,
+    totalConstruction,
+    marketingTotal,
+    brokerTotal
+  };
 }
 
 // ===== Renderização Sidebar =====
