@@ -91,6 +91,18 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
         <label>Busca</label><input id="search" type="text" placeholder="Pesquisar projeto...">
         <label class="small">Mostrar</label>
         <select id="showIndicators"><option value="all">Todos</option><option value="vgv">VGV</option><option value="irr">TIR</option></select>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0">
+
+        <div><strong>Condições de Venda</strong></div>
+        <label>Desconto Pré-lançamento (%)</label>
+        <input id="discountPre" type="number" min="0" max="100" step="0.1" value="10">
+        <label>Desconto Lançamento (%)</label>
+        <input id="discountLaunch" type="number" min="0" max="100" step="0.1" value="5">
+        <label>Parcelas do saldo (nº)</label>
+        <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
+        <div class="small" style="margin-top:6px">30% é pago em 6x a partir do mês da venda; o restante (70%) é pago em X parcelas.</div>
+
         <div style="display:flex;gap:8px;margin-top:10px">
           <button id="btnExport" class="button">Exportar JSON</button>
           <button id="btnReset" class="button ghost">Restaurar</button>
@@ -168,6 +180,25 @@ let projects = [
 const PASSWORD="Investidor";
 const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 
+// ===== Persistência das configurações de venda =====
+const cfgKey = 'aps_sale_cfg';
+let saleCfg = { discountPre:10, discountLaunch:5, parcelasRestantes:24 };
+
+function loadCfg(){
+  const s = localStorage.getItem(cfgKey);
+  if(s) try { saleCfg = Object.assign(saleCfg, JSON.parse(s)); } catch(e){}
+  document.getElementById('discountPre').value = saleCfg.discountPre;
+  document.getElementById('discountLaunch').value = saleCfg.discountLaunch;
+  document.getElementById('parcelasRestantes').value = saleCfg.parcelasRestantes;
+}
+function saveCfg(){
+  saleCfg.discountPre = Number(document.getElementById('discountPre').value) || 0;
+  saleCfg.discountLaunch = Number(document.getElementById('discountLaunch').value) || 0;
+  saleCfg.parcelasRestantes = Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes').value) || 24));
+  localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
+  renderSidebar();
+}
+
 // ===== Funções financeiras =====
 function irr(values, guess = 0.01) {
   const eps = 1e-7;
@@ -193,94 +224,139 @@ function irr(values, guess = 0.01) {
   return rate;
 }
 
-// ===== Calcular projeto =====
+// ===== Novo cálculo de distribuição de vendas com desconto e parcelamento =====
 function computeProject(p) {
+  // carregar cfg atual
+  const cfg = saleCfg;
+
   const months = p.months;
-  const price_unit = p.area * p.price_m2;
-  const VGV = p.units * price_unit;
+  const price_unit_full = p.area * p.price_m2;
+  const VGV = p.units * price_unit_full;
   const totalConstruction = p.units * p.area * p.cost_m2;
 
-  const receiptsPre = Array(months).fill(0);
-  const receiptsLaunch = Array(months).fill(0);
-  const receiptsMonthly = Array(months).fill(0);
-  const investments = Array(months).fill(0);
-  const costs = Array(months).fill(0);
+  // vamos construir arrays dinâmicos de recebimentos (podem ultrapassar 'months')
+  const receiptsPre = [];   // por mês
+  const receiptsLaunch = [];
+  const receiptsMonthly = [];
+  const investments = [];
+  const costs = [];
 
-  // ===== Investimentos mensais =====
-  const incc = 0.0045;
-  const den = (months * (months + 1)) / 2;
-
-  for (let m = 1; m <= months; m++) {
-    const prop = m / den;
-    const base = totalConstruction * prop;
-    investments[m - 1] = base * Math.pow(1 + incc, m);
+  // helper: ensure length
+  function ensureLen(arr, len){
+    while(arr.length < len) arr.push(0);
   }
 
-  // ===== Distribuição de vendas =====
-  const entryPercent = 0.30;
-  const entryMonths = 6;
-  const remainingPercent = 0.70;
+  // função que adiciona parcelas para uma unidade vendida num determinado mês
+  // params: saleMonth (0-index), price_unit (já com desconto quando aplicável), targetArray (receiptsX)
+  function addSalePayments(saleMonth, price_unit, targetArray) {
+    // 30% dividido em 6x starting at saleMonth
+    const entradaPct = 0.30;
+    const entradaMonths = 6;
+    const entradaTotal = price_unit * entradaPct;
+    const entradaParcel = entradaTotal / entradaMonths;
 
-  function distributeSales(units, startMonth, receiptsArr) {
-    for (let s = 0; s < units; s++) {
-      // Entrada 30% em 6 meses
-      const entryInstallment = (entryPercent * price_unit) / entryMonths;
-      for (let m = 0; m < entryMonths; m++) {
-        const idx = startMonth + m;
-        if (idx < months) receiptsArr[idx] += entryInstallment;
-      }
+    // 70% restante dividido em parcelasRestantes (inicia APÓS as 6 parcelas)
+    const restantePct = 0.70;
+    const restanteTotal = price_unit * restantePct;
+    const restParc = cfg.parcelasRestantes || 24;
 
-      // Saldo 70% distribuído até o fim
-      const startRemaining = startMonth + entryMonths;
-      const remainingMonths = months - startRemaining;
-      if (remainingMonths > 0) {
-        const remainingInstallment = (remainingPercent * price_unit) / remainingMonths;
-        for (let m = startRemaining; m < months; m++) {
-          receiptsArr[m] += remainingInstallment;
-        }
-      }
-      startMonth++; // próxima unidade
+    // distribuir 6 parcelas de entrada
+    for (let m = 0; m < entradaMonths; m++) {
+      const idx = saleMonth + m;
+      ensureLen(targetArray, idx+1);
+      targetArray[idx] += entradaParcel;
+    }
+
+    // distribuir parcelas do saldo a partir de saleMonth + entradaMonths
+    for (let m = 0; m < restParc; m++) {
+      const idx = saleMonth + entradaMonths + m;
+      ensureLen(targetArray, idx+1);
+      targetArray[idx] += restanteTotal / restParc;
     }
   }
 
-  // Pré-lançamento e lançamento
-  distributeSales(p.pre_launch_sales, 0, receiptsPre);
-  distributeSales(p.launch_sales, p.pre_launch_sales, receiptsLaunch);
+  // distribuir vendas conforme tipo (pré, lançamento, mensais)
+  // função genérica para distribuir N unidades começando em startMonth,
+  // iterando unidade a unidade (cada unidade "vende" em mês subsequente)
+  function distributeUnits(units, startMonth, receiptsArr, type) {
+    for (let u = 0; u < units; u++) {
+      const saleMonth = startMonth + u;
+      // preço unitário com desconto aplicável
+      let price_unit = price_unit_full;
+      if (type === 'pre' && cfg.discountPre) price_unit = price_unit_full * (1 - cfg.discountPre/100);
+      if (type === 'launch' && cfg.discountLaunch) price_unit = price_unit_full * (1 - cfg.discountLaunch/100);
+      // monthly sales (pós-lançamento) não recebem desconto aqui (conforme solicitado)
+      addSalePayments(saleMonth, price_unit, receiptsArr);
+    }
+  }
 
-  // Vendas mensais
+  // distribuir pré-lançamento (começa mês 0)
+  distributeUnits(p.pre_launch_sales, 0, receiptsPre, 'pre');
+  // distribuir lançamento (começa após pré-lançamento)
+  distributeUnits(p.launch_sales, p.pre_launch_sales, receiptsLaunch, 'launch');
+
+  // vendas mensais após lançamento:
   let unitsSoldMonthly = 0;
   let monthIdx = p.pre_launch_sales + p.launch_sales;
   while (unitsSoldMonthly < p.units - (p.pre_launch_sales + p.launch_sales)) {
     const unitsThisMonth = Math.min(p.monthly_sales, p.units - (p.pre_launch_sales + p.launch_sales) - unitsSoldMonthly);
-    distributeSales(unitsThisMonth, monthIdx, receiptsMonthly);
+    distributeUnits(unitsThisMonth, monthIdx, receiptsMonthly, 'monthly');
     unitsSoldMonthly += unitsThisMonth;
     monthIdx++;
-    if (monthIdx >= months) break;
+    // safety to avoid infinite loop
+    if (monthIdx > 1000) break;
   }
 
-  // ===== Custos =====
-  const marketingTotal = 0.015 * VGV;
-  const marketingMonthly = marketingTotal / months;
-  const brokerTotal = 0.05 * VGV;
+  // agora unimos arrays e definimos o tamanho final (o maior índice existente)
+  const finalLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, months);
 
-  for (let m = 0; m < months; m++) {
-    costs[m] += marketingMonthly;        // marketing proporcional
-    costs[m] += 8000 + 3000;             // custos fixos
-    if (m === 11) costs[m] += 0.01 * VGV; // custo anual adicional
-    if (m === 0) costs[m] += 0.05 * totalConstruction; // entrada de construção
+  // ===== Investimentos mensais (mantém o modelo anterior até 'months') =====
+  const incc = 0.0045;
+  const den = (months * (months + 1)) / 2;
+  for (let m = 1; m <= finalLen; m++) {
+    if (m <= months) {
+      const prop = m / den;
+      const base = totalConstruction * prop;
+      investments[m - 1] = base * Math.pow(1 + incc, m);
+    } else {
+      investments[m - 1] = 0; // sem investimentos após conclusão
+    }
+  }
+
+  // ===== Custos mensais (mantemos custos até months; após isso zero) =====
+  for (let m = 0; m < finalLen; m++) {
+    if (m < months) {
+      costs[m] = 0;
+      const marketingTotal = 0.015 * VGV;
+      const marketingMonthly = marketingTotal / months;
+      costs[m] += marketingMonthly;        // marketing proporcional
+      costs[m] += 8000 + 3000;             // custos fixos
+      if (m === 11) costs[m] += 0.01 * VGV; // custo anual adicional
+      if (m === 0) costs[m] += 0.05 * totalConstruction; // entrada de construção
+    } else {
+      costs[m] = 0;
+    }
+  }
+
+  // preencher arrays de receipts combinados por mês
+  const receipts = [];
+  for (let i = 0; i < finalLen; i++) {
+    const a = i < receiptsPre.length ? receiptsPre[i] : 0;
+    const b = i < receiptsLaunch.length ? receiptsLaunch[i] : 0;
+    const c = i < receiptsMonthly.length ? receiptsMonthly[i] : 0;
+    receipts[i] = a + b + c;
   }
 
   // ===== Fluxo líquido =====
-  const receipts = receiptsPre.map((v, i) => v + receiptsLaunch[i] + receiptsMonthly[i]);
-  const net = receipts.map((r, i) => r - investments[i] - costs[i]);
+  const net = receipts.map((r, i) => r - (investments[i] || 0) - (costs[i] || 0));
 
   // ===== Indicadores financeiros =====
   const irrMonthly = irr(net);
-  const irrAnnual = Math.pow(1 + irrMonthly, 12) - 1;
+  const irrAnnual = isFinite(irrMonthly) ? Math.pow(1 + irrMonthly, 12) - 1 : NaN;
   const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
   const npvVal = net.reduce((s, v, i) => s + v / Math.pow(1 + rate, i), 0);
 
-  // Payback
+  // Payback (em meses desde o início do fluxo)
   let cumul = 0;
   let payback = '--';
   for (let i = 0; i < net.length; i++) {
@@ -289,7 +365,12 @@ function computeProject(p) {
   }
 
   const totalNet = net.reduce((s, v) => s + v, 0);
-  const roi = investments.reduce((s, v) => s + v, 0) === 0 ? 0 : (totalNet / investments.reduce((s, v) => s + v, 0)) * 100;
+  const totalInvestment = investments.reduce((s, v) => s + v, 0);
+  const roi = totalInvestment === 0 ? 0 : (totalNet / totalInvestment) * 100;
+
+  // totals for display
+  const marketingTotal = 0.015 * VGV;
+  const brokerTotal = 0.05 * VGV;
 
   return {
     receiptsPre,
@@ -338,8 +419,8 @@ function renderSidebar(){
   </div>
   <div class="kpi">
     <div class="item"><div class="small">VGV</div><div class="value">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
-    <div class="item"><div class="small">ROI</div><div class="value">${d.roi.toFixed(1)}%</div></div>
-    <div class="item"><div class="small">TIR</div><div class="value">${(d.irrAnnual*100).toFixed(1)}%</div></div>
+    <div class="item"><div class="small">ROI</div><div class="value">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
+    <div class="item"><div class="small">TIR</div><div class="value">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
   </div>
 `;
     info.querySelectorAll('input').forEach(inp=>{
@@ -415,17 +496,21 @@ function selectProject(id) {
       </div>
 
       <div style="margin-top:12px" class="small">
-        Passe o mouse sobre os pontos do gráfico para ver valores mensais.
+        Passe o mouse sobre os pontos do gráfico para ver valores mensais. (Receitas já consideram desconto e parcelamento configurados)
       </div>
     </div>
   `;
 
   // ===== Chart.js atualizado =====
   const ctx = document.getElementById('chartCash'+id).getContext('2d');
+
+  // garantir rótulos até o tamanho do fluxo
+  const labels = Array.from({length: d.net.length}, (_, i) => 'M' + (i+1));
+
   new Chart(ctx, {
     type: 'line',
     data: {
-      labels: Array.from({length: d.net.length}, (_, i) => i+1),
+      labels,
       datasets: [
         {
           label: 'Pré-lançamento',
@@ -464,7 +549,12 @@ function selectProject(id) {
     options: {
       plugins: {
         legend: { labels: { color: '#fff' } },
-        tooltip: { mode: 'index', intersect: false }
+        tooltip: { mode: 'index', intersect: false, callbacks: {
+          label: function(context){
+            const v = context.raw || 0;
+            return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+          }
+        } }
       },
       interaction: { mode: 'nearest', axis: 'x', intersect: false },
       scales: {
@@ -476,18 +566,37 @@ function selectProject(id) {
 }
 
 // ===== Persistência e Eventos =====
-function saveAll(){localStorage.setItem('aps_projects',JSON.stringify(projects));alert('Alterações salvas no navegador (localStorage).');}
+function saveAll(){ localStorage.setItem('aps_projects',JSON.stringify(projects)); saveCfg(); alert('Alterações salvas no navegador (localStorage).'); }
 function exportJson(){const blob=new Blob([JSON.stringify(projects,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.json';a.click();URL.revokeObjectURL(url);}
 function downloadCsv(){const rows=['id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales'];projects.forEach(p=>rows.push([p.id,p.name,p.city,p.units,p.area,p.price_m2,p.cost_m2,p.months,p.pre_launch_sales,p.launch_sales,p.monthly_sales].join(',')));const blob=new Blob([rows.join('\n')],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.csv';a.click();URL.revokeObjectURL(url);}
 
-document.getElementById('btnLogin').addEventListener('click',()=>{const v=document.getElementById('pwd').value;if(v===PASSWORD){document.getElementById('loginModal').style.display='none';document.getElementById('app').style.display='flex';const saved=localStorage.getItem('aps_projects');if(saved)try{projects=JSON.parse(saved);}catch(e){}renderSidebar();}else alert('Senha incorreta');});
+document.getElementById('btnLogin').addEventListener('click',()=>{
+  const v=document.getElementById('pwd').value;
+  if(v===PASSWORD){
+    document.getElementById('loginModal').style.display='none';
+    document.getElementById('app').style.display='flex';
+    const saved=localStorage.getItem('aps_projects');
+    if(saved)try{projects=JSON.parse(saved);}catch(e){}
+    loadCfg();
+    renderSidebar();
+  }else alert('Senha incorreta');
+});
 document.getElementById('btnExport').addEventListener('click',exportJson);
 document.getElementById('btnPublish').addEventListener('click',saveAll);
-document.getElementById('btnReset').addEventListener('click',()=>{if(confirm('Restaurar valores iniciais?')){localStorage.removeItem('aps_projects');location.reload();}});
+document.getElementById('btnReset').addEventListener('click',()=>{if(confirm('Restaurar valores iniciais?')){localStorage.removeItem('aps_projects');localStorage.removeItem(cfgKey);location.reload();}});
 document.getElementById('btnNew').addEventListener('click',()=>{const id=projects.length+1;projects.push({id:id,name:'Novo Empreendimento '+id,city:'Cidade',units:10,area:70,price_m2:5000,cost_m2:2000,months:18,pre_launch_sales:0,launch_sales:0,monthly_sales:2});renderSidebar();});
 document.getElementById('btnDownloadCsv').addEventListener('click',downloadCsv);
 
-window.addEventListener('load',()=>{const saved=localStorage.getItem('aps_projects');if(saved)try{projects=JSON.parse(saved);}catch(e){}});
+// salvar cfg ao alterar inputs
+document.getElementById('discountPre').addEventListener('change',saveCfg);
+document.getElementById('discountLaunch').addEventListener('change',saveCfg);
+document.getElementById('parcelasRestantes').addEventListener('change',saveCfg);
+
+window.addEventListener('load',()=>{
+  const saved=localStorage.getItem('aps_projects');
+  if(saved)try{projects=JSON.parse(saved);}catch(e){}
+  loadCfg();
+});
 </script>
 
 </body>
