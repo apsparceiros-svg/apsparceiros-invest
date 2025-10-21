@@ -220,26 +220,28 @@ function computeProject(p) {
     investments[m - 1] = invested;
   }
 
-  // Recebimentos de vendas (realista: 30% entrada em 6x + 70% até fim da obra)
+  // Recebimentos de vendas (a partir do 6º mês)
 let sold = 0;
-for (let s = 1; s <= salesMonths; s++) {
+const startSales = 6; // início das vendas (mês 6)
+const entryPercent = 0.30; // 30% de entrada
+const entryMonths = 6; // parcelada em 6x
+const remainingPercent = 0.70; // saldo de 70%
+
+for (let s = startSales; s <= salesMonths + startSales - 1; s++) {
   const unitsThis = Math.min(p.sales_per_month, p.units - sold);
   sold += unitsThis;
 
   for (let u = 0; u < unitsThis; u++) {
     const price = price_unit;
-    const entryPercent = 0.30;
-    const entryMonths = 6;
-    const remainingPercent = 0.70;
 
-    // 30% de entrada parcelada em 6 meses após a venda
+    // 30% de entrada parcelada em 6 meses a partir da venda
     const entryInstallment = (entryPercent * price) / entryMonths;
     for (let m = 0; m < entryMonths; m++) {
       const idx = s - 1 + m;
       if (idx < months) receipts[idx] += entryInstallment;
     }
 
-    // 70% restantes parcelados do fim da entrada até o fim da obra
+    // 70% restantes distribuídos até o final do cronograma
     const startRemaining = s - 1 + entryMonths;
     const remainingMonths = months - startRemaining;
     if (remainingMonths > 0) {
@@ -250,7 +252,6 @@ for (let s = 1; s <= salesMonths; s++) {
     }
   }
 }
-
   // Custos
   const VGV_total = VGV;
   const marketingTotal = 0.015 * VGV_total;
