@@ -1,186 +1,57 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>APSPARCEIROS Invest — Dashboard Premium</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<meta charset="UTF-8">
+<title>Simulador de Projetos Imobiliários</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-:root{
-  --bg:#070707;
-  --panel:#0f0f0f;
-  --muted:#9e9e9e;
-  --gold:#c9a84b;
-  --card:#121212;
-  --accent:#e6e6e6;
-}
-*{box-sizing:border-box;font-family:Inter,system-ui,Arial;color:var(--accent)}
-html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a);-webkit-font-smoothing:antialiased}
-.header{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.04)}
-.brand{font-weight:800;color:var(--gold);letter-spacing:0.6px}
-.header .meta{color:var(--muted);font-size:13px}
-.container{display:flex;height:calc(100vh - 72px);gap:18px;padding:18px}
-.sidebar{width:340px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:14px;overflow:auto}
-.content{flex:1;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));border-radius:12px;padding:14px;overflow:auto}
-.section-title{font-weight:700;color:var(--gold);margin-bottom:8px}
-.project-card{background:var(--card);padding:12px;border-radius:10px;margin-bottom:12px;display:flex;gap:12px;align-items:flex-start;border:1px solid rgba(255,255,255,0.03);cursor:pointer;flex-direction:column}
-.project-card .info{flex:1;width:100%}
-.small{font-size:12px;color:var(--muted)}
-.kpi{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
-.kpi .item{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:8px;border-radius:8px;min-width:90px;text-align:center}
-.kpi .value{font-weight:700;color:var(--gold);margin-top:6px}
-.controls label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
-.controls input[type=text],
-.controls input[type=number],
-.project-card input[type=text],
-.project-card input[type=number]{
-    background-color: #1e1e1e;
-    color: #fff;
-    border: 1px solid #c9a84b;
-    padding: 6px 8px;
-    border-radius: 6px;
-    width: 100%;
-    margin-bottom:6px;
-}
-.project-card input[type=text]:focus,
-.project-card input[type=number]:focus{
-    outline:2px solid #c9a84b;
-    background-color:#292929;
-}
-.button{background:var(--gold);color:#0b0b0b;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:700}
-.button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--accent)}
-.card{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:12px;border-radius:10px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.02)}
-.tooltip{position:relative;display:inline-block}
-.tooltip .tt{visibility:hidden;width:260px;background:#0c0c0c;color:var(--muted);text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:10;bottom:130%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .12s}
-.tooltip:hover .tt{visibility:visible;opacity:1}
-@media(max-width:980px){.container{flex-direction:column}.sidebar{width:auto}}
+body{font-family:sans-serif;background:#1e1e1e;color:#fff;margin:0;padding:0}
+.container{display:flex;gap:12px;padding:12px}
+.sidebar{width:360px;overflow-y:auto;max-height:90vh}
+.project-card{background:#2e2e2e;padding:8px;margin-bottom:8px;border-radius:6px;cursor:pointer}
+.project-card:hover{background:#3e3e3e}
+.info label{font-size:12px;display:block;margin-top:4px}
+.info input{width:100%;padding:2px;border-radius:3px;border:none;margin-top:2px}
+.kpi{display:flex;gap:8px;margin-top:6px}
+.kpi .item{flex:1;background:#3a3a3a;padding:4px;border-radius:4px;text-align:center}
+.small{font-size:11px;color:#ccc}
+.value{font-weight:600;color:#ffd700}
+.card{background:#2a2a2a;padding:8px;border-radius:6px;margin-bottom:8px}
+#detailArea{flex:1;overflow-y:auto;max-height:90vh;padding:0 12px}
+input[type=number]{-moz-appearance:textfield;}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+button{cursor:pointer}
 </style>
 </head>
 <body>
-
-<header class="header">
-  <div class="brand">APSPARCEIROS Invest</div>
-  <div class="meta">Dashboard · Portfólio · Proteção</div>
-</header>
-
-<!-- Login Modal -->
-<div id="loginModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:50">
-  <div style="background:#0b0b0b;padding:22px;border-radius:10px;width:420px;border:1px solid rgba(255,255,255,0.04)">
-    <h3 style="margin-top:0;color:var(--gold)">Acesso ao Painel</h3>
-    <p class="small" style="margin-bottom:12px">Insira a senha para editar os valores</p>
-    <input id="pwd" type="password" placeholder="Senha" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--accent)">
-    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
-      <button id="btnLogin" class="button">Entrar</button>
-    </div>
-    <p class="small" style="margin-top:10px;color:var(--muted)">Senha: <strong>Investidor</strong></p>
-  </div>
-</div>
-
-<div class="container" id="app" style="display:none">
-  <aside class="sidebar">
-    <div class="section-title">Portfólio</div>
+<div class="container">
+  <div class="sidebar">
+    <input type="text" id="search" placeholder="Pesquisar projeto..." style="width:100%;margin-bottom:8px;padding:4px;border-radius:4px;border:none">
     <div id="projectsList"></div>
-
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><strong>Filtrar</strong><div class="small">por indicador</div></div>
-        <div><button id="btnNew" class="button">+ Novo</button></div>
-      </div>
-      <div class="controls" style="margin-top:10px">
-        <label>Busca</label><input id="search" type="text" placeholder="Pesquisar projeto...">
-        <label class="small">Mostrar</label>
-        <select id="showIndicators"><option value="all">Todos</option><option value="vgv">VGV</option><option value="irr">TIR</option></select>
-
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0">
-
-        <div><strong>Condições de Venda</strong></div>
-        <label>Desconto Pré-lançamento (%)</label>
-        <input id="discountPre" type="number" min="0" max="100" step="0.1" value="10">
-        <label>Desconto Lançamento (%)</label>
-        <input id="discountLaunch" type="number" min="0" max="100" step="0.1" value="5">
-
-        <label>Entrada (%)</label>
-        <input id="entradaPct" type="number" min="0" max="100" step="0.1" value="30">
-
-        <label>Parcelas da entrada (nº)</label>
-        <input id="entradaMonths" type="number" min="1" step="1" value="6">
-
-        <label>Parcelas do saldo (nº)</label>
-        <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
-
-        <div class="small" style="margin-top:6px">A entrada é paga em X parcelas a partir do mês da venda; o restante (saldo) é pago em Y parcelas subsequentes.</div>
-
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button id="btnExport" class="button">Exportar JSON</button>
-          <button id="btnReset" class="button ghost">Restaurar</button>
-        </div>
-      </div>
+      <strong>Configurações Gerais</strong>
+      <label>Desconto Pré-lançamento (%)</label><input id="discountPre" type="number">
+      <label>Desconto Lançamento (%)</label><input id="discountLaunch" type="number">
+      <label>Parcelas Restantes</label><input id="parcelasRestantes" type="number">
+      <label>Entrada (%)</label><input id="entradaPct" type="number">
+      <label>Meses de Entrada</label><input id="entradaMonths" type="number">
+      <button onclick="saveCfg()" style="margin-top:6px;width:100%;padding:4px;border:none;border-radius:4px;background:#4caf50;color:#fff">Salvar Configurações</button>
     </div>
-    <div class="footer small">APSPARCEIROS Invest · Template editável</div>
-  </aside>
-
-  <main class="content">
-    <div style="display:flex;gap:12px;align-items:center">
-      <div style="flex:1">
-        <h2 id="panelTitle">Dashboard</h2>
-        <div class="small">Edite os projetos e clique em salvar</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div class="tooltip"><button id="btnHelp" class="button ghost">Legenda</button><div class="tt"><strong>ROI</strong>: retorno sobre o capital investido.<br><strong>TIR</strong>: taxa interna de retorno anualizada.<br><strong>Payback</strong>: meses para recuperar o aporte.</div></div>
-        <button id="btnDownloadCsv" class="button ghost">Download CSV</button>
-        <button id="btnPublish" class="button">Salvar alterações</button>
-      </div>
+    <div class="card">
+      <strong>Resumo Portfólio</strong>
+      <div>Total VGV: <span id="totalVgv">0</span></div>
+      <div>ROI médio: <span id="avgRoi">0</span></div>
+      <div>TIR média: <span id="avgIrr">0</span></div>
+      <canvas id="chartPortfolio" height="140"></canvas>
     </div>
-
-    <div style="display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:12px">
-      <section>
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div><strong>Visão Geral do Portfólio</strong><div class="small">Resumo consolidado</div></div>
-            <div style="text-align:right">
-              <div class="small">VGV total</div>
-              <div style="font-weight:800;color:var(--gold)" id="totalVgv">R$ 0</div>
-            </div>
-          </div>
-          <div style="display:flex;gap:12px;margin-top:12px">
-            <div style="flex:1"><canvas id="chartPortfolio" height="120"></canvas></div>
-            <div style="width:220px">
-              <div class="kpi">
-                <div class="item"><div class="small">ROI médio</div><div class="value" id="avgRoi">--</div></div>
-                <div class="item"><div class="small">TIR média</div><div class="value" id="avgIrr">--</div></div>
-              </div>
-              <div style="margin-top:10px" class="small">Clique num projeto no menu lateral para ver detalhes.</div>
-            </div>
-          </div>
-        </div>
-
-        <div id="detailArea"></div>
-      </section>
-
-      <aside>
-        <div class="card">
-          <div class="section-title">Indicadores rápidos</div>
-          <table style="width:100%"><tbody>
-            <tr><td class="small">VGV</td><td class="small">Valor Geral de Vendas</td></tr>
-            <tr><td class="small">ROI</td><td class="small">Retorno sobre o capital</td></tr>
-            <tr><td class="small">TIR</td><td class="small">Taxa interna de retorno</td></tr>
-            <tr><td class="small">Payback</td><td class="small">Meses para recuperar investimento</td></tr>
-          </tbody></table>
-        </div>
-
-        <div class="card">
-          <div class="section-title">Cap Table (exemplo)</div>
-          <div class="small">Incorporador: 50%<br>Terrenista: 20%<br>Investidores: 30%</div>
-        </div>
-      </aside>
-    </div>
-  </main>
+  </div>
+  <div id="detailArea">
+    <div class="card"><strong>Selecione um projeto para detalhes</strong></div>
+  </div>
 </div>
 
 <script>
 // ======= Configurações =======
-const PASSWORD="Investidor";
 const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 const cfgKey = 'aps_sale_cfg';
 let saleCfg = { discountPre:10, discountLaunch:5, parcelasRestantes:24, entradaPct:30, entradaMonths:6 };
@@ -188,37 +59,24 @@ let projects = [];
 
 // ======= Classe Project =======
 class Project {
-  constructor(data){
-    Object.assign(this, data);
-    this.compute();
-  }
-
-  compute() {
-    const cfg = saleCfg;
-    const months = this.months;
-    const price_unit_full = this.area * this.price_m2;
-    const VGV = this.units * price_unit_full;
-    const totalConstruction = this.units * this.area * this.cost_m2;
-
-    const receiptsPre=[], receiptsLaunch=[], receiptsMonthly=[], investments=[], costs=[];
-
+  constructor(data){ Object.assign(this,data); this.compute(); }
+  compute(){
+    const cfg=saleCfg;
+    const months=this.months;
+    const price_unit_full=this.area*this.price_m2;
+    const VGV=this.units*price_unit_full;
+    const totalConstruction=this.units*this.area*this.cost_m2;
+    const receiptsPre=[],receiptsLaunch=[],receiptsMonthly=[],investments=[],costs=[];
     const ensureLen=(arr,len)=>{ while(arr.length<len) arr.push(0); }
-
-    const addSalePayments=(saleMonth, price_unit, targetArray)=>{
-      const entradaPct = cfg.entradaPct/100, entradaMonths = cfg.entradaMonths;
-      const entradaTotal = price_unit*entradaPct;
-      const entradaParcel = entradaTotal/entradaMonths;
-      const restanteTotal = price_unit*(1-entradaPct);
-      const restParc = cfg.parcelasRestantes;
-
-      for(let m=0;m<entradaMonths;m++){
-        const idx=saleMonth+m; ensureLen(targetArray,idx+1); targetArray[idx]+=entradaParcel;
-      }
-      for(let m=0;m<restParc;m++){
-        const idx=saleMonth+entradaMonths+m; ensureLen(targetArray,idx+1); targetArray[idx]+=restanteTotal/restParc;
-      }
+    const addSalePayments=(saleMonth,price_unit,targetArray)=>{
+      const entradaPct=cfg.entradaPct/100,entradaMonths=cfg.entradaMonths;
+      const entradaTotal=price_unit*entradaPct;
+      const entradaParcel=entradaTotal/entradaMonths;
+      const restanteTotal=price_unit*(1-entradaPct);
+      const restParc=cfg.parcelasRestantes;
+      for(let m=0;m<entradaMonths;m++){ const idx=saleMonth+m; ensureLen(targetArray,idx+1); targetArray[idx]+=entradaParcel; }
+      for(let m=0;m<restParc;m++){ const idx=saleMonth+entradaMonths+m; ensureLen(targetArray,idx+1); targetArray[idx]+=restanteTotal/restParc; }
     }
-
     const distributeUnits=(units,startMonth,arr,type)=>{
       for(let u=0;u<units;u++){
         const saleMonth=startMonth+u;
@@ -228,79 +86,53 @@ class Project {
         addSalePayments(saleMonth,price_unit,arr);
       }
     }
-
     distributeUnits(this.pre_launch_sales,0,receiptsPre,'pre');
     distributeUnits(this.launch_sales,this.pre_launch_sales,receiptsLaunch,'launch');
-
     let unitsSoldMonthly=0, monthIdx=this.pre_launch_sales+this.launch_sales;
     while(unitsSoldMonthly<this.units-(this.pre_launch_sales+this.launch_sales)){
       const unitsThisMonth=Math.min(this.monthly_sales,this.units-(this.pre_launch_sales+this.launch_sales)-unitsSoldMonthly);
       distributeUnits(unitsThisMonth,monthIdx,receiptsMonthly,'monthly');
       unitsSoldMonthly+=unitsThisMonth; monthIdx++; if(monthIdx>1000) break;
     }
-
-    const finalLen=Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, months);
-
-    // Investimentos e custos
+    const finalLen=Math.max(receiptsPre.length,receiptsLaunch.length,receiptsMonthly.length,months);
     const incc=0.0045, den=(months*(months+1))/2;
     for(let m=1;m<=finalLen;m++){
-      investments[m-1] = m<=months ? totalConstruction*(m/den)*Math.pow(1+incc,m) : 0;
+      investments[m-1]=m<=months?totalConstruction*(m/den)*Math.pow(1+incc,m):0;
       costs[m-1]=0;
-      if(m<=months){
-        costs[m-1]+=0.015*VGV/months + 8000+3000;
-        if(m===11) costs[m-1]+=0.01*VGV;
-        if(m===1) costs[m-1]+=0.05*totalConstruction;
-      }
+      if(m<=months){ costs[m-1]+=0.015*VGV/months+8000+3000; if(m===11) costs[m-1]+=0.01*VGV; if(m===1) costs[m-1]+=0.05*totalConstruction; }
     }
-
-    const receipts=[];
-    for(let i=0;i<finalLen;i++){
-      receipts[i]=(receiptsPre[i]||0)+(receiptsLaunch[i]||0)+(receiptsMonthly[i]||0);
-    }
-
+    const receipts=[]; for(let i=0;i<finalLen;i++){ receipts[i]=(receiptsPre[i]||0)+(receiptsLaunch[i]||0)+(receiptsMonthly[i]||0); }
     const net=receipts.map((r,i)=>r-(investments[i]||0)-(costs[i]||0));
     const irrMonthly=irr(net);
     const irrAnnual=isFinite(irrMonthly)?Math.pow(1+irrMonthly,12)-1:NaN;
     const rate=Math.pow(1+0.12,1/12)-1;
     const npvVal=net.reduce((s,v,i)=>s+v/Math.pow(1+rate,i),0);
-
-    let cumul=0, payback='--';
-    for(let i=0;i<net.length;i++){ cumul+=net[i]; if(cumul>=0){payback=i+1;break;} }
-    const totalNet=net.reduce((s,v)=>s+v,0);
-    const roi=totalConstruction===0?0:(totalNet/totalConstruction)*100;
-
+    let cumul=0,payback='--'; for(let i=0;i<net.length;i++){ cumul+=net[i]; if(cumul>=0){payback=i+1;break;} }
+    const totalNet=net.reduce((s,v)=>s+v,0); const roi=totalConstruction===0?0:(totalNet/totalConstruction)*100;
     this._computed={receiptsPre,receiptsLaunch,receiptsMonthly,receipts,investments,costs,net,irrMonthly,irrAnnual,npvVal,payback,roi,VGV,totalConstruction,marketingTotal:0.015*VGV,brokerTotal:0.05*VGV};
   }
-
   getComputed(){ return this._computed; }
-
-  updateData(field,value){
-    this[field]=value;
-    this.compute();
-  }
+  updateData(field,value){ this[field]=value; this.compute(); }
 }
 
 // ======= IRR =======
 function irr(values, guess = 0.01) {
-  const eps = 1e-7, maxIter = 1000; let rate = guess;
-  const npv = r => values.reduce((s, v, i) => s + v / Math.pow(1 + r, i), 0);
-  const dnpv = r => values.reduce((s, v, i) => s - i * v / Math.pow(1 + r, i + 1), 0);
-  for (let i=0;i<maxIter;i++){
-    const f=npv(rate), df=dnpv(rate); if(Math.abs(df)<1e-12) break;
-    const nr=rate-f/df; if(Math.abs(nr-rate)<eps) return rate; rate=nr;
-  }
-  let low=-0.999, high=10;
-  for(let i=0;i<200;i++){ const mid=(low+high)/2; const v=npv(mid); if(Math.abs(v)<1e-6) return mid; if(v>0) low=mid; else high=mid; }
+  const eps=1e-7,maxIter=1000; let rate=guess;
+  const npv=r=>values.reduce((s,v,i)=>s+v/Math.pow(1+r,i),0);
+  const dnpv=r=>values.reduce((s,v,i)=>s-i*v/Math.pow(1+r,i+1),0);
+  for(let i=0;i<maxIter;i++){ const f=npv(rate),df=dnpv(rate); if(Math.abs(df)<1e-12) break; const nr=rate-f/df; if(Math.abs(nr-rate)<eps) return rate; rate=nr; }
+  let low=-0.999,high=10; for(let i=0;i<200;i++){ const mid=(low+high)/2; const v=npv(mid); if(Math.abs(v)<1e-6) return mid; if(v>0) low=mid; else high=mid; }
   return rate;
 }
 
 // ======= Persistência =======
-function loadCfg(){ const s=localStorage.getItem(cfgKey); if(s) try { saleCfg = Object.assign(saleCfg,JSON.parse(s)); } catch{} 
-  ['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths'].forEach(id=>document.getElementById(id).value=saleCfg[id]);
-}
+function loadCfg(){ const s=localStorage.getItem(cfgKey); if(s) try{ saleCfg=Object.assign(saleCfg,JSON.parse(s)); }catch{} ['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths'].forEach(id=>document.getElementById(id).value=saleCfg[id]); }
 function saveCfg(){ ['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths'].forEach(id=>saleCfg[id]=Number(document.getElementById(id).value)); localStorage.setItem(cfgKey,JSON.stringify(saleCfg)); renderSidebar(); }
 
-// ======= Render Sidebar e Cards =======
+// ======= Debounce =======
+function debounce(fn,delay){let timer;return function(...args){clearTimeout(timer);timer=setTimeout(()=>fn.apply(this,args),delay);}}
+
+// ======= Render Sidebar =======
 let portfolioChart=null;
 function renderSidebar(){
   const el=document.getElementById('projectsList'); el.innerHTML='';
@@ -311,10 +143,8 @@ function renderSidebar(){
     const div=document.createElement('div'); div.className='project-card';
     const info=document.createElement('div'); info.className='info';
     info.innerHTML=`
-<label><strong>Nome</strong></label>
-<input type="text" value="${p.name}" data-field="name">
-<label><strong>Cidade</strong></label>
-<input type="text" value="${p.city}" data-field="city">
+<label><strong>Nome</strong></label><input type="text" value="${p.name}" data-field="name">
+<label><strong>Cidade</strong></label><input type="text" value="${p.city}" data-field="city">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
   <div><label>Unidades</label><input type="number" value="${p.units}" data-field="units"></div>
   <div><label>Área (m²)</label><input type="number" value="${p.area}" data-field="area"></div>
@@ -344,27 +174,27 @@ function renderSidebar(){
   updatePortfolioChart();
 }
 
-// ======= Charts =======
+// ======= Portfolio Chart =======
 function updatePortfolioChart(){
   const totals=projects.map(p=>p.getComputed().VGV);
   const ctx=document.getElementById('chartPortfolio').getContext('2d');
-  if(portfolioChart) { portfolioChart.data.datasets[0].data=totals; portfolioChart.update(); return; }
-  portfolioChart=new Chart(ctx,{type:'doughnut',data:{labels:projects.map(p=>p.name),datasets:[{data:totals,backgroundColor:colors}]},options:{plugins:{legend:{position:'bottom',labels:{color:'#fff'}}}}});
+  if(portfolioChart){ portfolioChart.data.datasets[0].data=totals; portfolioChart.update(); }
+  else portfolioChart=new Chart(ctx,{type:'doughnut',data:{labels:projects.map(p=>p.name),datasets:[{data:totals,backgroundColor:colors}]},options:{plugins:{legend:{position:'bottom',labels:{color:'#fff'}}}}});
   document.getElementById('totalVgv').innerText=totals.reduce((s,v)=>s+v,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
-  const avgRoi=projects.reduce((s,p)=> s + p.getComputed().roi,0)/projects.length;
-  const avgIrr=projects.reduce((s,p)=> s + p.getComputed().irrAnnual,0)/projects.length;
+  const avgRoi=projects.reduce((s,p)=>s+p.getComputed().roi,0)/projects.length;
+  const avgIrr=projects.reduce((s,p)=>s+p.getComputed().irrAnnual,0)/projects.length;
   document.getElementById('avgRoi').innerText=isFinite(avgRoi)?avgRoi.toFixed(1)+'%':'--';
   document.getElementById('avgIrr').innerText=isFinite(avgIrr)?(avgIrr*100).toFixed(1)+'%':'--';
 }
 
-// ======= Seleção de projeto e gráfico detalhado =======
+// ======= Select Project Detail =======
 function selectProject(id){
   const p=projects.find(x=>x.id===id), d=p.getComputed();
   const area=document.getElementById('detailArea');
   area.innerHTML=`
 <div class="card">
 <div style="display:flex;justify-content:space-between"><div><strong>${p.name}</strong><div class="small">${p.city}</div></div>
-<div style="text-align:right"><div class="small">VGV</div><div style="font-weight:800;color:var(--gold)">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div></div>
+<div style="text-align:right"><div class="small">VGV</div><div style="font-weight:800;color:#ffd700">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div></div>
 <div style="display:flex;gap:12px;margin-top:12px">
   <div style="flex:1"><canvas id="chartCash${id}" height="140"></canvas></div>
   <div style="width:320px">
@@ -384,7 +214,6 @@ function selectProject(id){
 </div>
 <div style="margin-top:12px" class="small">Passe o mouse sobre os pontos do gráfico para ver valores mensais.</div>
 </div>`;
-
   const ctx=document.getElementById('chartCash'+id).getContext('2d');
   new Chart(ctx,{
     type:'line',
@@ -393,29 +222,26 @@ function selectProject(id){
             {label:'Pré-lançamento',data:d.receiptsPre,borderColor:'#ff9800',backgroundColor:'rgba(255,152,0,0.2)',fill:true,tension:0.3},
             {label:'Lançamento',data:d.receiptsLaunch,borderColor:'#4caf50',backgroundColor:'rgba(76,175,80,0.2)',fill:true,tension:0.3},
             {label:'Vendas Mensais',data:d.receiptsMonthly,borderColor:'#2196f3',backgroundColor:'rgba(33,150,243,0.2)',fill:true,tension:0.3},
-            {label:'Fluxo Líquido',data:d.net,borderColor:'#c9a84b',backgroundColor:'rgba(201,168,75,0.08)',fill:true,tension:0.3}
+            {label:'Investimentos',data:d.investments,borderColor:'#f44336',fill:false,tension:0.3},
+            {label:'Custos',data:d.costs,borderColor:'#9c27b0',fill:false,tension:0.3},
+            {label:'Net',data:d.net,borderColor:'#ffc107',fill:false,tension:0.3}
           ]},
-    options:{plugins:{legend:{labels:{color:'#fff'}},tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.raw.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}}},
-      interaction:{mode:'nearest',axis:'x',intersect:false},scales:{x:{ticks:{color:'#fff'}},y:{ticks:{color:'#fff'}}}}
+    options:{plugins:{legend:{labels:{color:'#fff'}}},scales:{y:{ticks:{color:'#fff'}},x:{ticks:{color:'#fff'}}}}
   });
 }
 
-// ======= Utils =======
-function debounce(fn,delay){let timeout; return (...args)=>{clearTimeout(timeout); timeout=setTimeout(()=>fn(...args),delay);};}
+// ======= Mock Projects =======
+function generateProjects(){
+  projects=[
+    new Project({id:1,name:'Residencial Alpha',city:'São Paulo',units:120,area:65,price_m2:8500,cost_m2:4500,months:18,pre_launch_sales:10,launch_sales:20,monthly_sales:5}),
+    new Project({id:2,name:'Cond. Beta',city:'Rio de Janeiro',units:90,area:80,price_m2:7500,cost_m2:4000,months:20,pre_launch_sales:5,launch_sales:15,monthly_sales:4}),
+    new Project({id:3,name:'Torres Gamma',city:'Belo Horizonte',units:60,area:70,price_m2:8200,cost_m2:4300,months:16,pre_launch_sales:8,launch_sales:12,monthly_sales:3}),
+    new Project({id:4,name:'Jardins Delta',city:'Curitiba',units:50,area:85,price_m2:9000,cost_m2:5000,months:18,pre_launch_sales:5,launch_sales:10,monthly_sales:2})
+  ];
+}
 
 // ======= Inicialização =======
-window.addEventListener('load',()=>{
-  const saved=localStorage.getItem('aps_projects');
-  if(saved) try{projects=JSON.parse(saved).map(p=>new Project(p));}catch{}
-  else projects=[
-    new Project({id:1,name:"Residencial Ubatuba Premium",city:"Ubatuba - SP",units:30,area:80,price_m2:7000,cost_m2:2800,months:24,pre_launch_sales:2,launch_sales:4,monthly_sales:3}),
-    new Project({id:2,name:"Residencial Caraguá Vista",city:"Caraguá - SP",units:24,area:75,price_m2:6500,cost_m2:2600,months:22,pre_launch_sales:1,launch_sales:3,monthly_sales:3}),
-    new Project({id:3,name:"Residencial Guarujá Prime",city:"Guarujá - SP",units:36,area:90,price_m2:7200,cost_m2:3000,months:28,pre_launch_sales:3,launch_sales:5,monthly_sales:4})
-  ];
-  loadCfg();
-  renderSidebar();
-});
+loadCfg(); generateProjects(); renderSidebar();
 </script>
-
 </body>
 </html>
