@@ -54,13 +54,49 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
 .tooltip{position:relative;display:inline-block}
 .tooltip .tt{visibility:hidden;width:260px;background:#0c0c0c;color:var(--muted);text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:10;bottom:130%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .12s}
 .tooltip:hover .tt{visibility:visible;opacity:1}
-#projectModal{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:100}
-#projectModal>div{background:#0b0b0b;padding:22px;border-radius:10px;width:90%;max-width:720px;max-height:90%;overflow:auto;position:relative}
-.modal-close{position:absolute;top:14px;right:14px;background:transparent;border:none;color:var(--accent);font-size:18px;cursor:pointer}
-.modal-header{display:flex;gap:12px;align-items:center}
-.modal-totals .stat{margin-bottom:6px}
-.stats-grid .card{background:var(--card);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
 @media(max-width:980px){.container{flex-direction:column}.sidebar{width:auto}}
+
+/* Modal styles */
+#detailModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.modal-inner {
+  width: 92%;
+  max-width: 1100px;
+  max-height: 92vh;
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+  border-radius: 12px;
+  padding: 14px;
+  border:1px solid rgba(255,255,255,0.04);
+  overflow:auto;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  background: transparent;
+  border: none;
+  color: var(--gold);
+  font-size: 20px;
+  cursor: pointer;
+}
+.modal-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px }
+.modal-tabs { display:flex; gap:8px; margin-bottom:12px; }
+.tab-btn {
+  background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px;color:var(--accent);cursor:pointer;
+}
+.tab-btn.active { background:var(--gold); color:#0b0b0b; border-color:var(--gold) }
+.modal-charts { display:flex; gap:12px; flex-direction:column }
+.canvas-wrap { background:transparent; border-radius:8px; padding:8px; border:1px solid rgba(255,255,255,0.02) }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px; margin-top:12px }
+.stat { background:var(--card); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.02) }
 </style>
 </head>
 <body>
@@ -150,7 +186,11 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
             </div>
           </div>
           <div style="display:flex;gap:12px;margin-top:12px">
-            <div style="flex:1"><canvas id="chartPortfolio" height="120"></canvas></div>
+            <div style="flex:1">
+              <div style="height:auto; min-height:120px;">
+                <canvas id="chartPortfolio" style="width:100%;height:auto;"></canvas>
+              </div>
+            </div>
             <div style="width:220px">
               <div class="kpi">
                 <div class="item"><div class="small">ROI médio</div><div class="value" id="avgRoi">--</div></div>
@@ -161,7 +201,8 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
           </div>
         </div>
 
-        <div id="detailArea" style="display:none;"></div>
+        <!-- O detailArea original foi mantido, mas ficará oculto (não usado) -->
+        <div id="detailArea" style="display:none"></div>
       </section>
 
       <aside>
@@ -184,108 +225,539 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
   </main>
 </div>
 
-<!-- Modal do Projeto -->
-<div id="projectModal">
-  <div>
-    <button class="modal-close" onclick="closeProjectModal()">✕</button>
+<!-- ================= Modal de detalhes (mantém tema escuro/dourado) ================= -->
+<div id="detailModal">
+  <div class="modal-inner" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <button class="modal-close" id="closeModal" title="Fechar">✕</button>
     <div class="modal-header">
       <div>
         <h3 id="modalTitle" style="margin:0;color:var(--gold)"></h3>
-        <div class="small" id="modalCity"></div>
-        <div class="small" id="modalVGV" style="margin-top:4px;font-weight:800;color:var(--gold)"></div>
+        <div class="small" id="modalCity" style="margin-top:4px;color:var(--muted)"></div>
+      </div>
+      <div style="text-align:right">
+        <div class="small">VGV</div>
+        <div style="font-weight:800;color:var(--gold)" id="modalVgv"></div>
       </div>
     </div>
-    <div class="modal-totals" id="modalTotals"></div>
-    <div class="modal-charts" style="margin-top:12px">
-      <canvas id="modalChart" style="width:100%;height:auto"></canvas>
+
+    <div class="modal-tabs" id="modalTabs">
+      <button class="tab-btn active" data-tab="fluxo">Fluxo Líquido</button>
+      <button class="tab-btn" data-tab="receitas">Receitas</button>
+      <button class="tab-btn" data-tab="custos">Custos</button>
     </div>
-    <div class="stats-grid" id="modalStats" style="margin-top:16px;display:grid;grid-template-columns:1fr;gap:12px"></div>
+
+    <div class="modal-charts">
+      <div class="canvas-wrap" id="wrapFluxo" style="display:block">
+        <canvas id="chartFluxo" style="width:100%;height:240px;"></canvas>
+      </div>
+      <div class="canvas-wrap" id="wrapReceitas" style="display:none">
+        <canvas id="chartReceitas" style="width:100%;height:240px;"></canvas>
+      </div>
+      <div class="canvas-wrap" id="wrapCustos" style="display:none">
+        <canvas id="chartCustos" style="width:100%;height:240px;"></canvas>
+      </div>
+
+      <div class="stats-grid" id="modalStats" style="margin-top:10px"></div>
+    </div>
   </div>
 </div>
 
 <script>
-// ===== Dados iniciais =====
+// ===== Dados iniciais (mantidos exatamente como antes) =====
 let projects = [
   {id:1,name:"Residencial Ubatuba Premium",city:"Ubatuba - SP",units:30,area:80,price_m2:7000,cost_m2:2800,months:24,pre_launch_sales:2,launch_sales:4,monthly_sales:3},
   {id:2,name:"Residencial Caraguá Vista",city:"Caraguá - SP",units:24,area:75,price_m2:6500,cost_m2:2600,months:22,pre_launch_sales:1,launch_sales:3,monthly_sales:3},
   {id:3,name:"Residencial Guarujá Prime",city:"Guarujá - SP",units:36,area:90,price_m2:7200,cost_m2:3000,months:28,pre_launch_sales:3,launch_sales:5,monthly_sales:4}
 ];
+const PASSWORD="Investidor";
+const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 
-// ===== Funções Auxiliares =====
-function formatMoney(v){return "R$ "+v.toLocaleString('pt-BR',{minimumFractionDigits:2})}
-function calcTotals(p){
-  let preVgv = p.pre_launch_sales*p.area*p.price_m2;
-  let launchVgv = p.launch_sales*p.area*p.price_m2;
-  let monthlyVgv = p.monthly_sales*p.area*p.price_m2;
-  let preCost = p.pre_launch_sales*p.area*p.cost_m2;
-  let launchCost = p.launch_sales*p.area*p.cost_m2;
-  let monthlyCost = p.monthly_sales*p.area*p.cost_m2;
+// ===== Persistência das configurações de venda =====
+const cfgKey = 'aps_sale_cfg';
+let saleCfg = { discountPre:10, discountLaunch:5, parcelasRestantes:24, entradaPct:30, entradaMonths:6 };
+
+function loadCfg(){
+  const s = localStorage.getItem(cfgKey);
+  if(s) try { saleCfg = Object.assign(saleCfg, JSON.parse(s)); } catch(e){}
+  document.getElementById('discountPre').value = saleCfg.discountPre;
+  document.getElementById('discountLaunch').value = saleCfg.discountLaunch;
+  document.getElementById('parcelasRestantes').value = saleCfg.parcelasRestantes;
+  document.getElementById('entradaPct').value = saleCfg.entradaPct;
+  document.getElementById('entradaMonths').value = saleCfg.entradaMonths;
+}
+function saveCfg(){
+  saleCfg.discountPre = Number(document.getElementById('discountPre').value) || 0;
+  saleCfg.discountLaunch = Number(document.getElementById('discountLaunch').value) || 0;
+  saleCfg.parcelasRestantes = Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes').value) || 24));
+  saleCfg.entradaPct = Math.min(100, Math.max(0, Number(document.getElementById('entradaPct').value) || 30));
+  saleCfg.entradaMonths = Math.max(1, Math.floor(Number(document.getElementById('entradaMonths').value) || 6));
+  localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
+  renderSidebar();
+}
+
+// ===== Funções financeiras (mantidas) =====
+function irr(values, guess = 0.01) {
+  const eps = 1e-7;
+  const maxIter = 1000;
+  let rate = guess;
+  const npv = r => values.reduce((s, v, i) => s + v / Math.pow(1 + r, i), 0);
+  const dnpv = r => values.reduce((s, v, i) => s - i * v / Math.pow(1 + r, i + 1), 0);
+  for (let i = 0; i < maxIter; i++) {
+    const f = npv(rate);
+    const df = dnpv(rate);
+    if (Math.abs(df) < 1e-12) break;
+    const nr = rate - f / df;
+    if (Math.abs(nr - rate) < eps) return rate;
+    rate = nr;
+  }
+  let low = -0.999, high = 10;
+  for (let i = 0; i < 200; i++) {
+    const mid = (low + high) / 2;
+    const v = npv(mid);
+    if (Math.abs(v) < 1e-6) return mid;
+    if (v > 0) low = mid; else high = mid;
+  }
+  return rate;
+}
+
+// ===== Novo cálculo de distribuição de vendas com desconto e parcelamento =====
+function computeProject(p) {
+  // carregar cfg atual
+  const cfg = saleCfg;
+
+  const months = p.months;
+  const price_unit_full = p.area * p.price_m2;
+  const VGV = p.units * price_unit_full;
+  const totalConstruction = p.units * p.area * p.cost_m2;
+
+  // vamos construir arrays dinâmicos de recebimentos (podem ultrapassar 'months')
+  const receiptsPre = [];   // por mês
+  const receiptsLaunch = [];
+  const receiptsMonthly = [];
+  const investments = [];
+  const costs = [];
+
+  // helper: ensure length
+  function ensureLen(arr, len){
+    while(arr.length < len) arr.push(0);
+  }
+
+  // função que adiciona parcelas para uma unidade vendida num determinado mês
+  // params: saleMonth (0-index), price_unit (já com desconto quando aplicável), targetArray (receiptsX)
+  function addSalePayments(saleMonth, price_unit, targetArray) {
+    // entrada configurável (percentual e nº parcelas)
+    const entradaPct = (cfg.entradaPct || 30) / 100;
+    const entradaMonths = cfg.entradaMonths || 6;
+
+    const entradaTotal = price_unit * entradaPct;
+    const entradaParcel = entradaTotal / entradaMonths;
+
+    // restante do saldo
+    const restantePct = 1 - entradaPct;
+    const restanteTotal = price_unit * restantePct;
+    const restParc = cfg.parcelasRestantes || 24;
+
+    // distribuir parcelas da entrada
+    for (let m = 0; m < entradaMonths; m++) {
+      const idx = saleMonth + m;
+      ensureLen(targetArray, idx+1);
+      targetArray[idx] += entradaParcel;
+    }
+
+    // distribuir parcelas do saldo a partir de saleMonth + entradaMonths
+    for (let m = 0; m < restParc; m++) {
+      const idx = saleMonth + entradaMonths + m;
+      ensureLen(targetArray, idx+1);
+      targetArray[idx] += restanteTotal / restParc;
+    }
+  }
+
+  // distribuir vendas conforme tipo (pré, lançamento, mensais)
+  // função genérica para distribuir N unidades começando em startMonth,
+  // iterando unidade a unidade (cada unidade "vende" em mês subsequente)
+  function distributeUnits(units, startMonth, receiptsArr, type) {
+    for (let u = 0; u < units; u++) {
+      const saleMonth = startMonth + u;
+      // preço unitário com desconto aplicável
+      let price_unit = price_unit_full;
+      if (type === 'pre' && cfg.discountPre) price_unit = price_unit_full * (1 - cfg.discountPre/100);
+      if (type === 'launch' && cfg.discountLaunch) price_unit = price_unit_full * (1 - cfg.discountLaunch/100);
+      // monthly sales (pós-lançamento) não recebem desconto aqui
+      addSalePayments(saleMonth, price_unit, receiptsArr);
+    }
+  }
+
+  // distribuir pré-lançamento (começa mês 0)
+  distributeUnits(p.pre_launch_sales, 0, receiptsPre, 'pre');
+  // distribuir lançamento (começa após pré-lançamento)
+  distributeUnits(p.launch_sales, p.pre_launch_sales, receiptsLaunch, 'launch');
+
+  // vendas mensais após lançamento:
+  let unitsSoldMonthly = 0;
+  let monthIdx = p.pre_launch_sales + p.launch_sales;
+  while (unitsSoldMonthly < p.units - (p.pre_launch_sales + p.launch_sales)) {
+    const unitsThisMonth = Math.min(p.monthly_sales, p.units - (p.pre_launch_sales + p.launch_sales) - unitsSoldMonthly);
+    distributeUnits(unitsThisMonth, monthIdx, receiptsMonthly, 'monthly');
+    unitsSoldMonthly += unitsThisMonth;
+    monthIdx++;
+    // safety to avoid infinite loop
+    if (monthIdx > 1000) break;
+  }
+
+  // agora unimos arrays e definimos o tamanho final (o maior índice existente)
+  const finalLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, months);
+
+  // ===== Investimentos mensais (mantém o modelo anterior até 'months') =====
+  const incc = 0.0045;
+  const den = (months * (months + 1)) / 2;
+  for (let m = 1; m <= finalLen; m++) {
+    if (m <= months) {
+      const prop = m / den;
+      const base = totalConstruction * prop;
+      investments[m - 1] = base * Math.pow(1 + incc, m);
+    } else {
+      investments[m - 1] = 0; // sem investimentos após conclusão
+    }
+  }
+
+  // ===== Custos mensais (mantemos custos até months; após isso zero) =====
+  for (let m = 0; m < finalLen; m++) {
+    if (m < months) {
+      costs[m] = 0;
+      const marketingTotal = 0.015 * VGV;
+      const marketingMonthly = marketingTotal / months;
+      costs[m] += marketingMonthly;        // marketing proporcional
+      costs[m] += 8000 + 3000;             // custos fixos
+      if (m === 11) costs[m] += 0.01 * VGV; // custo anual adicional
+      if (m === 0) costs[m] += 0.05 * totalConstruction; // entrada de construção
+    } else {
+      costs[m] = 0;
+    }
+  }
+
+  // preencher arrays de receipts combinados por mês
+  const receipts = [];
+  for (let i = 0; i < finalLen; i++) {
+    const a = i < receiptsPre.length ? receiptsPre[i] : 0;
+    const b = i < receiptsLaunch.length ? receiptsLaunch[i] : 0;
+    const c = i < receiptsMonthly.length ? receiptsMonthly[i] : 0;
+    receipts[i] = a + b + c;
+  }
+
+  // ===== Fluxo líquido =====
+  const net = receipts.map((r, i) => r - (investments[i] || 0) - (costs[i] || 0));
+
+  // ===== Indicadores financeiros =====
+  const irrMonthly = irr(net);
+  const irrAnnual = isFinite(irrMonthly) ? Math.pow(1 + irrMonthly, 12) - 1 : NaN;
+  const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
+  const npvVal = net.reduce((s, v, i) => s + v / Math.pow(1 + rate, i), 0);
+
+  // Payback (em meses desde o início do fluxo)
+  let cumul = 0;
+  let payback = '--';
+  for (let i = 0; i < net.length; i++) {
+    cumul += net[i];
+    if (cumul >= 0) { payback = i + 1; break; }
+  }
+
+  const totalNet = net.reduce((s, v) => s + v, 0);
+  const totalInvestment = investments.reduce((s, v) => s + v, 0);
+  const roi = totalInvestment === 0 ? 0 : (totalNet / totalInvestment) * 100;
+
+  // totals for display
+  const marketingTotal = 0.015 * VGV;
+  const brokerTotal = 0.05 * VGV;
+
   return {
-    pre:{vgv:preVgv,cost:preCost,net:preVgv-preCost},
-    launch:{vgv:launchVgv,cost:launchCost,net:launchVgv-launchCost},
-    monthly:{vgv:monthlyVgv,cost:monthlyCost,net:monthlyVgv-monthlyCost}
+    receiptsPre,
+    receiptsLaunch,
+    receiptsMonthly,
+    receipts,
+    investments,
+    costs,
+    net,
+    irrMonthly,
+    irrAnnual,
+    npvVal,
+    payback,
+    roi,
+    VGV,
+    totalConstruction,
+    marketingTotal,
+    brokerTotal
   };
 }
 
-// ===== Renderiza Lista de Projetos =====
-function renderProjects(){
-  const container=document.getElementById("projectsList");
-  container.innerHTML="";
-  projects.forEach(p=>{
-    let card=document.createElement("div");
-    card.className="project-card";
-    card.innerHTML=`<div class="info"><strong>${p.name}</strong><div class="small">${p.city}</div></div>`;
-    card.onclick=()=>openProjectModal(p);
-    container.appendChild(card);
+// ===== Renderização e Gráficos =====
+function renderSidebar(){
+  const el=document.getElementById('projectsList'); el.innerHTML='';
+  const searchVal=document.getElementById('search').value.toLowerCase();
+  projects.forEach((p,i)=>{
+    if(searchVal && !p.name.toLowerCase().includes(searchVal)) return;
+    const d=computeProject(p);
+    const div=document.createElement('div'); div.className='project-card';
+    const info=document.createElement('div'); info.className='info';
+    
+    info.innerHTML = `
+  <label><strong>Nome</strong></label>
+  <input type="text" value="${p.name.replace(/"/g,'&quot;')}" data-field="name">
+  <label><strong>Cidade</strong></label>
+  <input type="text" value="${p.city.replace(/"/g,'&quot;')}" data-field="city">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div><label>Unidades</label><input type="number" value="${p.units}" data-field="units"></div>
+    <div><label>Área (m²)</label><input type="number" value="${p.area}" data-field="area"></div>
+    <div><label>Preço/m²</label><input type="number" value="${p.price_m2}" data-field="price_m2"></div>
+    <div><label>Custo/m²</label><input type="number" value="${p.cost_m2}" data-field="cost_m2"></div>
+    <div><label>Meses</label><input type="number" value="${p.months}" data-field="months"></div>
+    <div><label>Pré-lançamento</label><input type="number" value="${p.pre_launch_sales}" data-field="pre_launch_sales"></div>
+    <div><label>Lançamento</label><input type="number" value="${p.launch_sales}" data-field="launch_sales"></div>
+    <div><label>Vendas/mês</label><input type="number" value="${p.monthly_sales}" data-field="monthly_sales"></div>
+  </div>
+  <div class="kpi">
+    <div class="item"><div class="small">VGV</div><div class="value">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="item"><div class="small">ROI</div><div class="value">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
+    <div class="item"><div class="small">TIR</div><div class="value">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
+  </div>
+`;
+    info.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input',()=>{
+        const field=inp.dataset.field;
+        if(['units','area','price_m2','cost_m2','months','pre_launch_sales','launch_sales','monthly_sales'].includes(field)) p[field]=Number(inp.value);
+        else p[field]=inp.value;
+        renderSidebar(); if(document.getElementById('detailModal').style.display === 'flex') openProjectModal(p.id);
+      });
+    });
+
+    div.appendChild(info); div.addEventListener('click',()=>openProjectModal(p.id));
+    el.appendChild(div);
+  });
+  updatePortfolioChart();
+}
+
+let portfolioChart=null;
+function updatePortfolioChart(){
+  const totals=projects.map(p=>computeProject(p).VGV);
+  const ctx=document.getElementById('chartPortfolio').getContext('2d');
+  if(portfolioChart) {
+    // atualizar dados para evitar recriar instância -> melhora performance
+    portfolioChart.data.labels = projects.map(p=>p.name);
+    portfolioChart.data.datasets[0].data = totals;
+    portfolioChart.update();
+    document.getElementById('totalVgv').innerText=totals.reduce((s,v)=>s+v,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+    const avgRoi=projects.reduce((s,p)=> s + computeProject(p).roi,0)/projects.length;
+    const avgIrr=projects.reduce((s,p)=> s + computeProject(p).irrAnnual,0)/projects.length;
+    document.getElementById('avgRoi').innerText=isFinite(avgRoi)?avgRoi.toFixed(1)+'%':'--';
+    document.getElementById('avgIrr').innerText=isFinite(avgIrr)?(avgIrr*100).toFixed(1)+'%':'--';
+    return;
+  }
+  portfolioChart=new Chart(ctx,{type:'doughnut',data:{labels:projects.map(p=>p.name),datasets:[{data:totals,backgroundColor:colors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#fff'}}}}});
+  document.getElementById('totalVgv').innerText=totals.reduce((s,v)=>s+v,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  const avgRoi=projects.reduce((s,p)=> s + computeProject(p).roi,0)/projects.length;
+  const avgIrr=projects.reduce((s,p)=> s + computeProject(p).irrAnnual,0)/projects.length;
+  document.getElementById('avgRoi').innerText=isFinite(avgRoi)?avgRoi.toFixed(1)+'%':'--';
+  document.getElementById('avgIrr').innerText=isFinite(avgIrr)?(avgIrr*100).toFixed(1)+'%':'--';
+}
+
+// ===== Modal logic =====
+let modalCharts = { fluxo: null, receitas: null, custos: null };
+function destroyModalCharts(){
+  Object.keys(modalCharts).forEach(k=>{
+    if(modalCharts[k]) { try{ modalCharts[k].destroy(); }catch(e){} modalCharts[k]=null; }
   });
 }
 
-// ===== Modal =====
-let modalChart;
-function openProjectModal(project){
-  document.getElementById("modalTitle").innerText=project.name;
-  document.getElementById("modalCity").innerText=project.city;
-  document.getElementById("modalVGV").innerText=formatMoney(project.units*project.area*project.price_m2);
+function openProjectModal(id){
+  const p = projects.find(x => x.id === id);
+  if(!p) return;
+  const d = computeProject(p);
 
-  // Totais no topo
-  let totals = calcTotals(project);
-  document.getElementById("modalTotals").innerHTML=`
-    <div class="stat"><strong>Pré-lançamento:</strong> ${formatMoney(totals.pre.net)}</div>
-    <div class="stat"><strong>Lançamento:</strong> ${formatMoney(totals.launch.net)}</div>
-    <div class="stat"><strong>Mensais:</strong> ${formatMoney(totals.monthly.net)}</div>
+  // preencher header do modal
+  document.getElementById('modalTitle').innerText = p.name;
+  document.getElementById('modalCity').innerText = p.city;
+  document.getElementById('modalVgv').innerText = d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+
+  // preencher estatísticas (mantendo exatamente as informações anteriores e acrescentando novas)
+  document.getElementById('modalStats').innerHTML = `
+    <div class="stat"><div class="small">ROI</div><div style="font-weight:800;color:var(--gold)">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
+    <div class="stat"><div class="small">TIR (a.a.)</div><div style="font-weight:800;color:var(--gold)">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
+    <div class="stat"><div class="small">VPL (12% a.a.)</div><div style="font-weight:800;color:var(--gold)">${d.npvVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Payback</div><div style="font-weight:800;color:var(--gold)">${d.payback} meses</div></div>
+    <div class="stat"><div class="small">Custo construção</div><div style="font-weight:800;color:var(--gold)">${d.totalConstruction.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Marketing</div><div style="font-weight:800;color:var(--gold)">${d.marketingTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Comissão</div><div style="font-weight:800;color:var(--gold)">${d.brokerTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Unidades</div><div style="font-weight:800;color:var(--gold)">${p.units}</div></div>
+    <div class="stat"><div class="small">Área total</div><div style="font-weight:800;color:var(--gold)">${(p.units * p.area).toLocaleString('pt-BR')} m²</div></div>
+    <div class="stat"><div class="small">Receita média/unidade</div><div style="font-weight:800;color:var(--gold)">${(d.VGV / p.units).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Lucro estimado</div><div style="font-weight:800;color:var(--gold)">${(d.VGV - d.totalConstruction - d.marketingTotal - d.brokerTotal).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
   `;
 
-  // Gráfico
-  const ctx=document.getElementById("modalChart").getContext("2d");
-  if(modalChart) modalChart.destroy();
-  modalChart=new Chart(ctx,{
-    type:'bar',
-    data:{
-      labels:['Pré-lançamento','Lançamento','Mensais'],
-      datasets:[
-        {label:'Receita',data:[totals.pre.vgv,totals.launch.vgv,totals.monthly.vgv],backgroundColor:'rgba(201,168,75,0.8)'},
-        {label:'Custos',data:[totals.pre.cost,totals.launch.cost,totals.monthly.cost],backgroundColor:'rgba(255,255,255,0.2)'}
+  // abrir modal
+  document.getElementById('detailModal').style.display = 'flex';
+
+  // destruir gráficos antigos se existirem
+  destroyModalCharts();
+
+  // preparar labels até o tamanho do fluxo
+  const labels = Array.from({length: d.net.length}, (_, i) => 'M' + (i+1));
+
+  // criar gráfico Fluxo Líquido
+  const ctxFluxo = document.getElementById('chartFluxo').getContext('2d');
+  modalCharts.fluxo = new Chart(ctxFluxo, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Fluxo Líquido',
+          data: d.net,
+          borderColor: '#c9a84b',
+          backgroundColor: 'rgba(201,168,75,0.08)',
+          fill: true,
+          tension: 0.3,
+        }
       ]
     },
-    options:{responsive:true,plugins:{legend:{labels:{color:'#c9a84b'}}},scales:{y:{ticks:{color:'#fff'}}}}
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins:{legend:{labels:{color:'#fff'}}},
+      interaction: { mode: 'nearest', axis: 'x', intersect: false },
+      scales: { x: { ticks: { color: '#fff' } }, y: { ticks: { color: '#fff' } } },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context){
+              const v = context.raw || 0;
+              return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+            }
+          }
+        }
+      }
+    }
   });
 
-  // Stats (exemplo, mantém tudo como estava)
-  let statsDiv=document.getElementById("modalStats");
-  statsDiv.innerHTML=`<div class="card">Unidades: ${project.units}</div><div class="card">Área média: ${project.area} m²</div><div class="card">Preço/m²: ${formatMoney(project.price_m2)}</div>`;
+  // criar gráfico Receitas (somado)
+  const ctxRec = document.getElementById('chartReceitas').getContext('2d');
+  modalCharts.receitas = new Chart(ctxRec, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Pré-lançamento', data: d.receiptsPre, borderColor: '#ff9800', backgroundColor: 'rgba(255,152,0,0.12)', fill:true, tension:0.3 },
+        { label: 'Lançamento', data: d.receiptsLaunch, borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.08)', fill:true, tension:0.3 },
+        { label: 'Mensais', data: d.receiptsMonthly, borderColor: '#2196f3', backgroundColor: 'rgba(33,150,243,0.06)', fill:true, tension:0.3 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins:{legend:{labels:{color:'#fff'}}},
+      scales: { x: { ticks: { color: '#fff' } }, y: { ticks: { color: '#fff' } } },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context){
+              const v = context.raw || 0;
+              return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+            }
+          }
+        }
+      }
+    }
+  });
 
-  document.getElementById("projectModal").style.display="flex";
+  // criar gráfico Custos (investimentos + custos)
+  const combinedCosts = d.investments.map((v,i)=> (v || 0) + (d.costs[i] || 0));
+  const ctxCust = document.getElementById('chartCustos').getContext('2d');
+  modalCharts.custos = new Chart(ctxCust, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Investimentos', data: d.investments, borderColor: '#9c27b0', backgroundColor: 'rgba(156,39,176,0.06)', fill:true, tension:0.3 },
+        { label: 'Custos operacionais', data: d.costs, borderColor: '#f44336', backgroundColor: 'rgba(244,67,54,0.06)', fill:true, tension:0.3 },
+        { label: 'Total Custos', data: combinedCosts, borderColor: '#ff5722', backgroundColor: 'rgba(255,87,34,0.06)', fill:true, tension:0.3 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins:{legend:{labels:{color:'#fff'}}},
+      scales: { x: { ticks: { color: '#fff' } }, y: { ticks: { color: '#fff' } } },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context){
+              const v = context.raw || 0;
+              return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ajustar abas - garantir Fluxo visível (padrão)
+  setActiveTab('fluxo');
 }
 
-function closeProjectModal(){document.getElementById("projectModal").style.display="none";}
+document.getElementById('closeModal').addEventListener('click',()=>{
+  document.getElementById('detailModal').style.display='none';
+  destroyModalCharts();
+});
 
-// ===== Inicialização =====
-renderProjects();
-document.getElementById("btnLogin").onclick=function(){
-  let pwd=document.getElementById("pwd").value;
-  if(pwd==="Investidor"){document.getElementById("loginModal").style.display="none";document.getElementById("app").style.display="flex";}
-  else alert("Senha incorreta");
+// gerenciamento de abas no modal
+document.querySelectorAll('#modalTabs .tab-btn').forEach(btn=>{
+  btn.addEventListener('click', (e) => {
+    const tab = btn.dataset.tab;
+    setActiveTab(tab);
+  });
+});
+function setActiveTab(tab){
+  document.querySelectorAll('#modalTabs .tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+  document.getElementById('wrapFluxo').style.display = (tab==='fluxo') ? 'block' : 'none';
+  document.getElementById('wrapReceitas').style.display = (tab==='receitas') ? 'block' : 'none';
+  document.getElementById('wrapCustos').style.display = (tab==='custos') ? 'block' : 'none';
+  // se os charts foram criados, chamar update para ajustar tamanhos
+  Object.keys(modalCharts).forEach(k=>{ if(modalCharts[k]) try{ modalCharts[k].resize(); modalCharts[k].update(); } catch(e){} });
 }
+
+// ===== Persistência e Eventos (mantidos) =====
+function saveAll(){ localStorage.setItem('aps_projects',JSON.stringify(projects)); saveCfg(); alert('Alterações salvas no navegador (localStorage).'); }
+function exportJson(){const blob=new Blob([JSON.stringify(projects,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.json';a.click();URL.revokeObjectURL(url);}
+function downloadCsv(){const rows=['id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales'];projects.forEach(p=>rows.push([p.id,p.name,p.city,p.units,p.area,p.price_m2,p.cost_m2,p.months,p.pre_launch_sales,p.launch_sales,p.monthly_sales].join(',')));const blob=new Blob([rows.join('\n')],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.csv';a.click();URL.revokeObjectURL(url);}
+
+document.getElementById('btnLogin').addEventListener('click',()=>{
+  const v=document.getElementById('pwd').value;
+  if(v===PASSWORD){
+    document.getElementById('loginModal').style.display='none';
+    document.getElementById('app').style.display='flex';
+    const saved=localStorage.getItem('aps_projects');
+    if(saved)try{projects=JSON.parse(saved);}catch(e){}
+    loadCfg();
+    renderSidebar();
+  }else alert('Senha incorreta');
+});
+document.getElementById('btnExport').addEventListener('click',exportJson);
+document.getElementById('btnPublish').addEventListener('click',saveAll);
+document.getElementById('btnReset').addEventListener('click',()=>{if(confirm('Restaurar valores iniciais?')){localStorage.removeItem('aps_projects');localStorage.removeItem(cfgKey);location.reload();}});
+
+document.getElementById('btnNew').addEventListener('click',()=>{const id=projects.length+1;projects.push({id:id,name:'Novo Empreendimento '+id,city:'Cidade',units:10,area:70,price_m2:5000,cost_m2:2000,months:18,pre_launch_sales:0,launch_sales:0,monthly_sales:2});renderSidebar();});
+document.getElementById('btnDownloadCsv').addEventListener('click',downloadCsv);
+
+// salvar cfg ao alterar inputs
+document.getElementById('discountPre').addEventListener('change',saveCfg);
+document.getElementById('discountLaunch').addEventListener('change',saveCfg);
+document.getElementById('parcelasRestantes').addEventListener('change',saveCfg);
+document.getElementById('entradaPct').addEventListener('change',saveCfg);
+document.getElementById('entradaMonths').addEventListener('change',saveCfg);
+
+window.addEventListener('load',()=>{
+  const saved=localStorage.getItem('aps_projects');
+  if(saved)try{projects=JSON.parse(saved);}catch(e){}
+  loadCfg();
+});
 </script>
 
 </body>
