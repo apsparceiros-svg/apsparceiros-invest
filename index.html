@@ -523,13 +523,20 @@ function renderSidebar(){
   </div>
 `;
     info.querySelectorAll('input').forEach(inp=>{
-      inp.addEventListener('input',()=>{
-        const field=inp.dataset.field;
-        if(['units','area','price_m2','cost_m2','months','pre_launch_sales','launch_sales','monthly_sales'].includes(field)) p[field]=Number(inp.value);
-        else p[field]=inp.value;
-        renderSidebar(); if(document.getElementById('detailModal').style.display === 'flex') openProjectModal(p.id);
-      });
-    });
+  // Impede que o clique no input abra o modal
+  inp.addEventListener('click', e => e.stopPropagation());
+
+  inp.addEventListener('input',()=>{
+    const field=inp.dataset.field;
+    if(['units','area','price_m2','cost_m2','months','pre_launch_sales','launch_sales','monthly_sales'].includes(field)) {
+      p[field]=Number(inp.value);
+    } else {
+      p[field]=inp.value;
+    }
+    renderSidebar(); 
+    if(document.getElementById('detailModal').style.display === 'flex') openProjectModal(p.id);
+  });
+});
 
     div.appendChild(info); div.addEventListener('click',()=>openProjectModal(p.id));
     el.appendChild(div);
