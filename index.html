@@ -101,7 +101,10 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
         <input id="discountLaunch" type="number" min="0" max="100" step="0.1" value="5">
         <label>Parcelas do saldo (nº)</label>
         <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
-        <div class="small" style="margin-top:6px">30% é pago em 6x a partir do mês da venda; o restante (70%) é pago em X parcelas.</div>
+        <label>Entrada (%)</label>
+        <input id="entradaPct" type="number" min="0" max="100" step="0.1" value="30">
+        <label>Parcelas da entrada (nº)</label>
+        <input id="entradaMonths" type="number" min="1" step="1" value="6">
 
         <div style="display:flex;gap:8px;margin-top:10px">
           <button id="btnExport" class="button">Exportar JSON</button>
@@ -182,7 +185,13 @@ const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 
 // ===== Persistência das configurações de venda =====
 const cfgKey = 'aps_sale_cfg';
-let saleCfg = { discountPre:10, discountLaunch:5, parcelasRestantes:24 };
+let saleCfg = {
+  discountPre:10,
+  discountLaunch:5,
+  parcelasRestantes:24,
+  entradaPct:30,
+  entradaMonths:6
+};
 
 function loadCfg(){
   const s = localStorage.getItem(cfgKey);
@@ -190,11 +199,16 @@ function loadCfg(){
   document.getElementById('discountPre').value = saleCfg.discountPre;
   document.getElementById('discountLaunch').value = saleCfg.discountLaunch;
   document.getElementById('parcelasRestantes').value = saleCfg.parcelasRestantes;
+  document.getElementById('entradaPct').value = saleCfg.entradaPct;
+  document.getElementById('entradaMonths').value = saleCfg.entradaMonths;
 }
+
 function saveCfg(){
   saleCfg.discountPre = Number(document.getElementById('discountPre').value) || 0;
   saleCfg.discountLaunch = Number(document.getElementById('discountLaunch').value) || 0;
   saleCfg.parcelasRestantes = Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes').value) || 24));
+  saleCfg.entradaPct = Math.min(100, Math.max(0, Number(document.getElementById('entradaPct').value) || 30));
+  saleCfg.entradaMonths = Math.max(1, Math.floor(Number(document.getElementById('entradaMonths').value) || 6));
   localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
   renderSidebar();
 }
@@ -249,16 +263,28 @@ function computeProject(p) {
   // função que adiciona parcelas para uma unidade vendida num determinado mês
   // params: saleMonth (0-index), price_unit (já com desconto quando aplicável), targetArray (receiptsX)
   function addSalePayments(saleMonth, price_unit, targetArray) {
-    // 30% dividido em 6x starting at saleMonth
-    const entradaPct = 0.30;
-    const entradaMonths = 6;
-    const entradaTotal = price_unit * entradaPct;
-    const entradaParcel = entradaTotal / entradaMonths;
+  const entradaPct = (cfg.entradaPct || 30) / 100;
+  const entradaMonths = cfg.entradaMonths || 6;
+  const restantePct = 1 - entradaPct;
 
-    // 70% restante dividido em parcelasRestantes (inicia APÓS as 6 parcelas)
-    const restantePct = 0.70;
-    const restanteTotal = price_unit * restantePct;
-    const restParc = cfg.parcelasRestantes || 24;
+  const entradaTotal = price_unit * entradaPct;
+  const restanteTotal = price_unit * restantePct;
+  const restParc = cfg.parcelasRestantes || 24;
+
+  // distribuir entrada
+  for (let m = 0; m < entradaMonths; m++) {
+    const idx = saleMonth + m;
+    ensureLen(targetArray, idx + 1);
+    targetArray[idx] += entradaTotal / entradaMonths;
+  }
+
+  // distribuir saldo
+  for (let m = 0; m < restParc; m++) {
+    const idx = saleMonth + entradaMonths + m;
+    ensureLen(targetArray, idx + 1);
+    targetArray[idx] += restanteTotal / restParc;
+  }
+}
 
     // distribuir 6 parcelas de entrada
     for (let m = 0; m < entradaMonths; m++) {
@@ -591,6 +617,8 @@ document.getElementById('btnDownloadCsv').addEventListener('click',downloadCsv);
 document.getElementById('discountPre').addEventListener('change',saveCfg);
 document.getElementById('discountLaunch').addEventListener('change',saveCfg);
 document.getElementById('parcelasRestantes').addEventListener('change',saveCfg);
+document.getElementById('entradaPct').addEventListener('change', saveCfg);
+document.getElementById('entradaMonths').addEventListener('change', saveCfg);
 
 window.addEventListener('load',()=>{
   const saved=localStorage.getItem('aps_projects');
