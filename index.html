@@ -234,9 +234,9 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
         <h3 id="modalTitle" style="margin:0;color:var(--gold)"></h3>
         <div class="small" id="modalCity" style="margin-top:4px;color:var(--muted)"></div>
       </div>
-      <div style="text-align:right">
-        <div class="small">VGV</div>
-        <div style="font-weight:800;color:var(--gold)" id="modalVgv"></div>
+      <div style="text-align:left; flex:1">
+      <div class="small">VGV</div>
+      <div style="font-weight:800;color:var(--gold)" id="modalVgv"></div>
       </div>
     </div>
 
@@ -577,7 +577,7 @@ function openProjectModal(id){
   document.getElementById('modalCity').innerText = p.city;
   document.getElementById('modalVgv').innerText = d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 
-  // preencher estatísticas (mantendo exatamente as informações anteriores e acrescentando novas)
+  // preencher estatísticas
   document.getElementById('modalStats').innerHTML = `
     <div class="stat"><div class="small">ROI</div><div style="font-weight:800;color:var(--gold)">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
     <div class="stat"><div class="small">TIR (a.a.)</div><div style="font-weight:800;color:var(--gold)">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
@@ -595,110 +595,55 @@ function openProjectModal(id){
   // abrir modal
   document.getElementById('detailModal').style.display = 'flex';
 
-  // destruir gráficos antigos se existirem
+  // destruir gráficos antigos
   destroyModalCharts();
 
-  // preparar labels até o tamanho do fluxo
-  const labels = Array.from({length: d.net.length}, (_, i) => 'M' + (i+1));
-
-  // criar gráfico Fluxo Líquido
-  const ctxFluxo = document.getElementById('chartFluxo').getContext('2d');
-  modalCharts.fluxo = new Chart(ctxFluxo, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Fluxo Líquido',
-          data: d.net,
-          borderColor: '#c9a84b',
-          backgroundColor: 'rgba(201,168,75,0.08)',
-          fill: true,
-          tension: 0.3,
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins:{legend:{labels:{color:'#fff'}}},
-      interaction: { mode: 'nearest', axis: 'x', intersect: false },
-      scales: { x: { ticks: { color: '#fff' } }, y: { ticks: { color: '#fff' } } },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: function(context){
-              const v = context.raw || 0;
-              return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  // helper para criar gráfico com tooltip acumulado
+  function createModalChart(ctx, datasets){
+    return new Chart(ctx,{
+      type:'line',
+      data:{labels:Array.from({length:d.net.length},(_,i)=>'M'+(i+1)),datasets:datasets},
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        interaction:{mode:'nearest', axis:'x', intersect:false},
+        scales:{x:{ticks:{color:'#fff'}}, y:{ticks:{color:'#fff'}}},
+        plugins:{
+          legend:{labels:{color:'#fff'}},
+          tooltip:{
+            callbacks:{
+              label:function(context){
+                const v = context.raw || 0;
+                const total = context.dataset.data.slice(0, context.dataIndex+1).reduce((s,x)=>s+x,0);
+                return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}) 
+                       + ' (Total: ' + total.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}) + ')';
+              }
             }
           }
         }
       }
-    }
-  });
+    });
+  }
 
-  // criar gráfico Receitas (somado)
-  const ctxRec = document.getElementById('chartReceitas').getContext('2d');
-  modalCharts.receitas = new Chart(ctxRec, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Pré-lançamento', data: d.receiptsPre, borderColor: '#ff9800', backgroundColor: 'rgba(255,152,0,0.12)', fill:true, tension:0.3 },
-        { label: 'Lançamento', data: d.receiptsLaunch, borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.08)', fill:true, tension:0.3 },
-        { label: 'Mensais', data: d.receiptsMonthly, borderColor: '#2196f3', backgroundColor: 'rgba(33,150,243,0.06)', fill:true, tension:0.3 },
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins:{legend:{labels:{color:'#fff'}}},
-      scales: { x: { ticks: { color: '#fff' } }, y: { ticks: { color: '#fff' } } },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: function(context){
-              const v = context.raw || 0;
-              return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
-            }
-          }
-        }
-      }
-    }
-  });
+  // criar gráficos
+  modalCharts.fluxo = createModalChart(document.getElementById('chartFluxo').getContext('2d'), [
+    {label:'Fluxo Líquido', data:d.net, borderColor:'#c9a84b', backgroundColor:'rgba(201,168,75,0.08)', fill:true, tension:0.3}
+  ]);
 
-  // criar gráfico Custos (investimentos + custos)
-  const combinedCosts = d.investments.map((v,i)=> (v || 0) + (d.costs[i] || 0));
-  const ctxCust = document.getElementById('chartCustos').getContext('2d');
-  modalCharts.custos = new Chart(ctxCust, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Investimentos', data: d.investments, borderColor: '#9c27b0', backgroundColor: 'rgba(156,39,176,0.06)', fill:true, tension:0.3 },
-        { label: 'Custos operacionais', data: d.costs, borderColor: '#f44336', backgroundColor: 'rgba(244,67,54,0.06)', fill:true, tension:0.3 },
-        { label: 'Total Custos', data: combinedCosts, borderColor: '#ff5722', backgroundColor: 'rgba(255,87,34,0.06)', fill:true, tension:0.3 }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins:{legend:{labels:{color:'#fff'}}},
-      scales: { x: { ticks: { color: '#fff' } }, y: { ticks: { color: '#fff' } } },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: function(context){
-              const v = context.raw || 0;
-              return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
-            }
-          }
-        }
-      }
-    }
-  });
+  modalCharts.receitas = createModalChart(document.getElementById('chartReceitas').getContext('2d'), [
+    {label:'Pré-lançamento', data:d.receiptsPre, borderColor:'#ff9800', backgroundColor:'rgba(255,152,0,0.12)', fill:true, tension:0.3},
+    {label:'Lançamento', data:d.receiptsLaunch, borderColor:'#4caf50', backgroundColor:'rgba(76,175,80,0.08)', fill:true, tension:0.3},
+    {label:'Mensais', data:d.receiptsMonthly, borderColor:'#2196f3', backgroundColor:'rgba(33,150,243,0.06)', fill:true, tension:0.3}
+  ]);
 
-  // ajustar abas - garantir Fluxo visível (padrão)
+  const combinedCosts = d.investments.map((v,i)=>(v||0)+(d.costs[i]||0));
+  modalCharts.custos = createModalChart(document.getElementById('chartCustos').getContext('2d'), [
+    {label:'Investimentos', data:d.investments, borderColor:'#9c27b0', backgroundColor:'rgba(156,39,176,0.06)', fill:true, tension:0.3},
+    {label:'Custos operacionais', data:d.costs, borderColor:'#f44336', backgroundColor:'rgba(244,67,54,0.06)', fill:true, tension:0.3},
+    {label:'Total Custos', data:combinedCosts, borderColor:'#ff5722', backgroundColor:'rgba(255,87,34,0.06)', fill:true, tension:0.3}
+  ]);
+
+  // aba padrão
   setActiveTab('fluxo');
 }
 
