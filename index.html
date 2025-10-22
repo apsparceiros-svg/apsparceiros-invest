@@ -55,6 +55,7 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
 .tooltip .tt{visibility:hidden;width:260px;background:#0c0c0c;color:var(--muted);text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:10;bottom:130%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .12s}
 .tooltip:hover .tt{visibility:visible;opacity:1}
 @media(max-width:980px){.container{flex-direction:column}.sidebar{width:auto}}
+table{border-collapse:collapse;width:100%} th,td{border:1px solid rgba(255,255,255,0.05);padding:6px;text-align:right} th{background:rgba(255,255,255,0.02);text-align:center;}
 </style>
 </head>
 <body>
@@ -84,21 +85,27 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><strong>Configurações de Venda</strong></div>
+        <div><strong>Filtrar</strong><div class="small">por indicador</div></div>
         <div><button id="btnNew" class="button">+ Novo</button></div>
       </div>
       <div class="controls" style="margin-top:10px">
         <label>Busca</label><input id="search" type="text" placeholder="Pesquisar projeto...">
-        <label>Percentual de Entrada (%)</label>
+        <label class="small">Mostrar</label>
+        <select id="showIndicators"><option value="all">Todos</option><option value="vgv">VGV</option><option value="irr">TIR</option></select>
+
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0">
+
+        <div><strong>Condições de Venda</strong></div>
+        <label>Porcentagem de entrada (%)</label>
         <input id="entradaPct" type="number" min="0" max="100" step="1" value="30">
-        <label>Parcelas da Entrada</label>
+        <label>Quantidade de parcelas da entrada</label>
         <input id="entradaParc" type="number" min="1" step="1" value="6">
-        <label>Parcelas Restantes do Saldo</label>
+        <label>Parcelas restantes do saldo</label>
         <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
 
         <div style="display:flex;gap:8px;margin-top:10px">
           <button id="btnExport" class="button">Exportar JSON</button>
-          <button id="btnDownloadCsv" class="button ghost">Exportar CSV</button>
+          <button id="btnReset" class="button ghost">Restaurar</button>
         </div>
       </div>
     </div>
@@ -111,17 +118,50 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
         <h2 id="panelTitle">Dashboard</h2>
         <div class="small">Edite os projetos e clique em salvar</div>
       </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="tooltip"><button id="btnHelp" class="button ghost">Legenda</button><div class="tt"><strong>ROI</strong>: retorno sobre o capital investido.<br><strong>TIR</strong>: taxa interna de retorno anualizada.<br><strong>Payback</strong>: meses para recuperar o aporte.</div></div>
+        <button id="btnDownloadCsv" class="button ghost">Download CSV</button>
+        <button id="btnPublish" class="button">Salvar alterações</button>
+      </div>
     </div>
 
-    <div class="card">
-      <canvas id="chartAll" height="120"></canvas>
-    </div>
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:12px">
+      <section>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><strong>Visão Geral do Portfólio</strong><div class="small">Resumo consolidado</div></div>
+            <div style="text-align:right">
+              <div class="small">VGV total</div>
+              <div style="font-weight:800;color:var(--gold)" id="totalVgv">R$ 0</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:12px">
+            <div style="flex:1"><canvas id="chartPortfolio" height="120"></canvas></div>
+            <div style="width:220px">
+              <div class="kpi">
+                <div class="item"><div class="small">ROI médio</div><div class="value" id="avgRoi">--</div></div>
+                <div class="item"><div class="small">TIR média</div><div class="value" id="avgIrr">--</div></div>
+              </div>
+              <div style="margin-top:10px" class="small">Clique num projeto no menu lateral para ver detalhes.</div>
+            </div>
+          </div>
+        </div>
 
-    <div id="detailArea"></div>
+        <div id="detailArea"></div>
+        <canvas id="chartDetail" height="200" style="margin-top:12px"></canvas>
+      </section>
 
-    <div class="card" style="margin-top:12px">
-      <h3>Detalhe do Projeto Selecionado</h3>
-      <canvas id="chartDetail" height="180"></canvas>
+      <aside>
+        <div class="card">
+          <div class="section-title">Indicadores rápidos</div>
+          <table style="width:100%"><tbody>
+            <tr><td class="small">VGV</td><td class="small">Valor Geral de Vendas</td></tr>
+            <tr><td class="small">ROI</td><td class="small">Retorno sobre o capital</td></tr>
+            <tr><td class="small">TIR</td><td class="small">Taxa interna de retorno</td></tr>
+            <tr><td class="small">Payback</td><td class="small">Meses para recuperar investimento</td></tr>
+          </tbody></table>
+        </div>
+      </aside>
     </div>
   </main>
 </div>
@@ -133,222 +173,210 @@ let projects=[
   {id:2,name:"Residencial Caraguá Vista",city:"Caraguá - SP",units:24,area:75,price_m2:6500,cost_m2:2600,months:22,pre_launch_sales:1,launch_sales:3,monthly_sales:3},
   {id:3,name:"Residencial Guarujá Prime",city:"Guarujá - SP",units:36,area:90,price_m2:7200,cost_m2:3000,months:28,pre_launch_sales:3,launch_sales:5,monthly_sales:4}
 ];
+
 const PASSWORD="Investidor";
-let saleCfg={entradaPct:30,entradaParc:6,parcelasRestantes:24};
+const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 let selectedProject=null;
 
-// ===== Persistência =====
+// ===== Configurações de venda =====
+const cfgKey='aps_sale_cfg';
+let saleCfg={entradaPct:30,entradaParc:6,parcelasRestantes:24};
 function loadCfg(){
-  const s=localStorage.getItem('aps_sale_cfg');
+  const s=localStorage.getItem(cfgKey);
   if(s) try{saleCfg=Object.assign(saleCfg,JSON.parse(s));}catch(e){}
   document.getElementById('entradaPct').value=saleCfg.entradaPct;
   document.getElementById('entradaParc').value=saleCfg.entradaParc;
   document.getElementById('parcelasRestantes').value=saleCfg.parcelasRestantes;
 }
 function saveCfg(){
-  saleCfg.entradaPct=Number(document.getElementById('entradaPct').value);
-  saleCfg.entradaParc=Number(document.getElementById('entradaParc').value);
-  saleCfg.parcelasRestantes=Number(document.getElementById('parcelasRestantes').value);
-  localStorage.setItem('aps_sale_cfg',JSON.stringify(saleCfg));
+  saleCfg.entradaPct=Number(document.getElementById('entradaPct').value)||30;
+  saleCfg.entradaParc=Number(document.getElementById('entradaParc').value)||6;
+  saleCfg.parcelasRestantes=Number(document.getElementById('parcelasRestantes').value)||24;
+  localStorage.setItem(cfgKey,JSON.stringify(saleCfg));
   renderSidebar();
-  if(selectedProject!==null) selectProject(selectedProject);
 }
 
 // ===== Funções financeiras =====
 function irr(values, guess=0.01){
-  const eps=1e-7,maxIter=1000; let rate=guess;
+  const eps=1e-7,maxIter=1000;let rate=guess;
   const npv=r=>values.reduce((s,v,i)=>s+v/Math.pow(1+r,i),0);
   const dnpv=r=>values.reduce((s,v,i)=>s-i*v/Math.pow(1+r,i+1),0);
-  for(let i=0;i<maxIter;i++){const f=npv(rate),df=dnpv(rate); if(Math.abs(df)<1e-12) break; const nr=rate-f/df; if(Math.abs(nr-rate)<eps) return nr; rate=nr;}
+  for(let i=0;i<maxIter;i++){
+    const f=npv(rate),df=dnpv(rate);
+    if(Math.abs(df)<1e-12) break;
+    const nr=rate-f/df;
+    if(Math.abs(nr-rate)<eps) return rate;
+    rate=nr;
+  }
   return rate;
 }
 
-// ===== Computa projeto =====
+// ===== Cálculo do projeto =====
 function computeProject(p){
   const cfg=saleCfg;
+  const months=p.months;
   const price_unit=p.area*p.price_m2;
-  const VGV=price_unit*p.units;
-  const totalConstruction=p.area*p.cost_m2*p.units;
+  const VGV=p.units*price_unit;
+  const totalConstruction=p.units*p.area*p.cost_m2;
 
+  const receiptsPre=[],receiptsLaunch=[],receiptsMonthly=[];
+  function ensureLen(arr,len){while(arr.length<len) arr.push(0);}
+  function addSalePayments(saleMonth,price_unit,targetArray){
+    const entradaTotal=price_unit*(cfg.entradaPct/100);
+    const entradaParcel=entradaTotal/cfg.entradaParc;
+    const restanteTotal=price_unit-entradaTotal;
+    const restanteParc=cfg.parcelasRestantes;
+    for(let m=0;m<cfg.entradaParc;m++){ensureLen(targetArray,saleMonth+m+1);targetArray[saleMonth+m]+=entradaParcel;}
+    for(let m=0;m<restanteParc;m++){ensureLen(targetArray,saleMonth+cfg.entradaParc+m+1);targetArray[saleMonth+cfg.entradaParc+m]+=restanteTotal/restanteParc;}
+  }
+  function distributeUnits(units,startMonth,targetArray){
+    for(let u=0;u<units;u++){
+      addSalePayments(startMonth+u,price_unit,targetArray);
+    }
+  }
+  distributeUnits(p.pre_launch_sales,0,receiptsPre);
+  distributeUnits(p.launch_sales,p.pre_launch_sales,receiptsLaunch);
+  let unitsSoldMonthly=0,monthIdx=p.pre_launch_sales+p.launch_sales;
+  while(unitsSoldMonthly < p.units-(p.pre_launch_sales+p.launch_sales)){
+    const unitsThisMonth=Math.min(p.monthly_sales,p.units-(p.pre_launch_sales+p.launch_sales)-unitsSoldMonthly);
+    distributeUnits(unitsThisMonth,monthIdx,receiptsMonthly);
+    unitsSoldMonthly+=unitsThisMonth; monthIdx++;
+    if(monthIdx>1000) break;
+  }
+
+  const finalLen=Math.max(receiptsPre.length,receiptsLaunch.length,receiptsMonthly.length,months);
+  const receipts=[];
+  for(let i=0;i<finalLen;i++){
+    const a=i<receiptsPre.length?receiptsPre[i]:0;
+    const b=i<receiptsLaunch.length?receiptsLaunch[i]:0;
+    const c=i<receiptsMonthly.length?receiptsMonthly[i]:0;
+    receipts[i]=a+b+c;
+  }
+
+  const investments=[],costs=[],net=[];
   const flow=[];
-  let unitsSold=0,month=0;
-
-  // Distribuir pré-lançamento
-  for(let i=0;i<p.pre_launch_sales;i++){addSale(month,price_unit*(1-cfg.entradaPct/100),p,flow,month);month++;unitsSold++;}
-  for(let i=0;i<p.launch_sales;i++){addSale(month,price_unit*(1-cfg.entradaPct/100),p,flow,month);month++;unitsSold++;}
-  while(unitsSold<p.units){
-    const mSales=Math.min(p.monthly_sales,p.units-unitsSold);
-    for(let j=0;j<mSales;j++){addSale(month,price_unit,p,flow,month);}
-    month++; unitsSold+=mSales;
+  for(let m=0;m<finalLen;m++){
+    const invest=m<months?totalConstruction/months:0;
+    const cost=0;
+    const netVal=receipts[m]-invest-cost;
+    flow.push({month:m+1,receita:receipts[m],invest:invest,net:netVal});
+    investments[m]=invest; costs[m]=cost; net[m]=netVal;
   }
 
-  // Investimento e custos
-  const investments=[]; const costs=[]; const net=[];
-  for(let m=0;m<flow.length;m++){
-    const invest=m< p.months?totalConstruction/p.months:0;
-    investments[m]=invest; costs[m]=0;
-    net[m]=flow[m].receita - invest - costs[m];
-  }
-
-  // Cálculos acumulados
+  // acumulado
   const cumFlow=[];
   net.reduce((a,v,i)=>cumFlow[i]=a+v,a=0);
 
-  // Indicadores
-  const irrMonthly=irr(net); const roi=(net.reduce((a,v)=>a+v,0)/investments.reduce((a,v)=>a+v,0))*100||0;
-  const tir=irrMonthly*12*100;
-  let payback='--',c=0; for(let v of net){c+=v;if(c>=0){payback=c; break;}}
+  // indicadores
+  const irrMonthly=irr(net);
+  const roi=net.reduce((a,v)=>a+v,0)/totalConstruction;
+  const payback=net.findIndex(v=>v>0?net.slice(0,net.indexOf(v)+1).reduce((s,x)=>s+x,0)>=totalConstruction:false)+1||null;
 
-  return {flow, cumFlow, roi, tir, payback, VGV, totalConstruction};
+  return {VGV,totalConstruction,flow,cumFlow,irr:irrMonthly,roi,payback};
 }
 
-// ===== Distribui venda =====
-function addSale(month,price_unit,p,flow,idx){
-  const cfg=saleCfg;
-  for(let i=0;i<cfg.entradaParc;i++){
-    ensure(flow,month+i); flow[month+i]=flow[month+i]||{month:month+i+1,receita:0,invest:0,net:0}; flow[month+i].receita+=price_unit*cfg.entradaPct/100/cfg.entradaParc;
-  }
-  for(let i=0;i<cfg.parcelasRestantes;i++){
-    ensure(flow,month+cfg.entradaParc+i); flow[month+cfg.entradaParc+i]=flow[month+cfg.entradaParc+i]||{month:month+cfg.entradaParc+i+1,receita:0,invest:0,net:0};
-    flow[month+cfg.entradaParc+i].receita+=price_unit*(1-cfg.entradaPct/100)/cfg.parcelasRestantes;
-  }
-}
-function ensure(arr,i){while(arr.length<=i) arr.push(undefined);}
-
-// ===== Renderização Sidebar =====
+// ===== Render =====
 function renderSidebar(){
-  const el=document.getElementById('projectsList'); el.innerHTML='';
-  const search=document.getElementById('search').value.toLowerCase();
-  projects.forEach((p,i)=>{
-    if(search && !p.name.toLowerCase().includes(search)) return;
-    const comp=computeProject(p);
-    const div=document.createElement('div'); div.className='project-card';
-    const info=document.createElement('div'); info.className='info';
-    info.innerHTML=`
-      <label>Nome</label><input type="text" value="${p.name}" data-field="name">
-      <label>Cidade</label><input type="text" value="${p.city}" data-field="city">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
-        <div><label>Unidades</label><input type="number" value="${p.units}" data-field="units"></div>
-        <div><label>Área</label><input type="number" value="${p.area}" data-field="area"></div>
-        <div><label>Preço/m²</label><input type="number" value="${p.price_m2}" data-field="price_m2"></div>
-        <div><label>Custo/m²</label><input type="number" value="${p.cost_m2}" data-field="cost_m2"></div>
-        <div><label>Meses</label><input type="number" value="${p.months}" data-field="months"></div>
-        <div><label>Pré-lançamento</label><input type="number" value="${p.pre_launch_sales}" data-field="pre_launch_sales"></div>
-        <div><label>Lançamento</label><input type="number" value="${p.launch_sales}" data-field="launch_sales"></div>
-        <div><label>Vendas/mês</label><input type="number" value="${p.monthly_sales}" data-field="monthly_sales"></div>
-      </div>
-      <div class="kpi">
-        <div class="item"><div class="small">VGV</div><div class="value">R$ ${comp.VGV.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div></div>
-        <div class="item"><div class="small">ROI</div><div class="value">${comp.roi.toFixed(1)}%</div></div>
-        <div class="item"><div class="small">TIR</div><div class="value">${comp.tir.toFixed(1)}%</div></div>
+  const list=document.getElementById('projectsList');
+  list.innerHTML='';
+  projects.forEach(p=>{
+    const card=document.createElement('div'); card.className='project-card';
+    card.innerHTML=`
+      <div class="info">
+        <input type="text" value="${p.name}" data-id="${p.id}" class="project-name">
+        <div class="small">${p.city}</div>
+        <div class="kpi">
+          <div class="item"><div class="small">VGV</div><div class="value">R$ ${computeProject(p).VGV.toLocaleString()}</div></div>
+          <div class="item"><div class="small">ROI</div><div class="value">${(computeProject(p).roi*100).toFixed(1)}%</div></div>
+        </div>
       </div>`;
-    info.querySelectorAll('input').forEach(inp=>{
-      inp.addEventListener('input',()=>{
-        const field=inp.dataset.field;
-        p[field]=['units','area','price_m2','cost_m2','months','pre_launch_sales','launch_sales','monthly_sales'].includes(field)?Number(inp.value):inp.value;
-        renderSidebar();
-        if(selectedProject!==null) selectProject(selectedProject);
-      });
-    });
-    div.appendChild(info); div.addEventListener('click',()=>{selectedProject=i; selectProject(i);});
-    el.appendChild(div);
-  });
-  renderAllChart();
-}
-
-// ===== Chart Portfólio =====
-let chartAll=null;
-function renderAllChart(){
-  const ctx=document.getElementById('chartAll').getContext('2d');
-  if(chartAll) chartAll.destroy();
-  chartAll=new Chart(ctx,{
-    type:'doughnut',
-    data:{
-      labels:projects.map(p=>p.name),
-      datasets:[{data:projects.map(p=>computeProject(p).VGV),backgroundColor:['#c9a84b','#4caf50','#2196f3']}]
-    },
-    options:{responsive:true,plugins:{legend:{position:'bottom'}}}
+    card.addEventListener('click',()=>selectProject(p.id));
+    list.appendChild(card);
   });
 }
 
-// ===== Chart Detalhado =====
-let chartDetail=null;
-function renderProjectChart(index){
-  if(index===null) return;
-  const p=projects[index];
+function selectProject(id){
+  const p=projects.find(x=>x.id===id); if(!p) return;
+  selectedProject=p;
+  document.getElementById('panelTitle').innerText=p.name;
+
   const comp=computeProject(p);
-  const labels=comp.flow.map(f=>f.month);
-  const dataReceita=comp.flow.map(f=>f.receita);
-  const dataInvest=comp.flow.map(f=>f.invest);
-  const dataNet=comp.flow.map(f=>f.net);
-  const dataAcum=comp.cumFlow;
+  renderDetailTable(comp.flow,comp.cumFlow);
+  renderDetailChart(comp.flow);
+}
 
+function renderDetailTable(flow,cum){
+  let html='<div class="card"><strong>Fluxo Mensal</strong><table><tr><th>Mês</th><th>Receita</th><th>Investimento</th><th>Fluxo Líquido</th><th>Acumulado</th></tr>';
+  for(let i=0;i<flow.length;i++){
+    html+=`<tr>
+      <td>${flow[i].month}</td>
+      <td>R$ ${flow[i].receita.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+      <td>R$ ${flow[i].invest.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+      <td>R$ ${flow[i].net.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+      <td>R$ ${cum[i].toLocaleString(undefined,{minimumFractionDigits:2})}</td>
+    </tr>`;
+  }
+  html+='</table></div>';
+  document.getElementById('detailArea').innerHTML=html;
+}
+
+// Charts
+let chartPortfolio=null,chartDetail=null;
+function renderCharts(){
+  const labels=projects.map(p=>p.name);
+  const data=projects.map(p=>computeProject(p).VGV);
+  if(chartPortfolio) chartPortfolio.destroy();
+  const ctx=document.getElementById('chartPortfolio').getContext('2d');
+  chartPortfolio=new Chart(ctx,{
+    type:'bar',
+    data:{labels, datasets:[{label:'VGV',data,backgroundColor:colors}]},
+    options:{responsive:true,plugins:{legend:{display:false}}}
+  });
+}
+function renderDetailChart(flow){
   const ctx=document.getElementById('chartDetail').getContext('2d');
+  const labels=flow.map(f=>f.month);
+  const dataReceita=flow.map(f=>f.receita);
+  const dataInvest=flow.map(f=>f.invest);
+  const dataNet=flow.map(f=>f.net);
+  const dataCum=[],sum=flow.map(f=>f.net).reduce((a,v,i)=>{dataCum[i]=(i>0?dataCum[i-1]:0)+v; return dataCum[i];},0);
   if(chartDetail) chartDetail.destroy();
   chartDetail=new Chart(ctx,{
     type:'line',
     data:{
       labels,
       datasets:[
-        {label:'Receita', data:dataReceita, borderColor:'#4caf50', backgroundColor:'#4caf5033', tension:0.3},
-        {label:'Investimento', data:dataInvest, borderColor:'#f44336', backgroundColor:'#f4433633', tension:0.3},
-        {label:'Fluxo Líquido', data:dataNet, borderColor:'#2196f3', backgroundColor:'#2196f333', tension:0.3},
-        {label:'Acumulado', data:dataAcum, borderColor:'#c9a84b', backgroundColor:'#c9a84b33', tension:0.3}
+        {label:'Receita',data:dataReceita,borderColor:'#2196f3',backgroundColor:'#2196f3',tension:0.3},
+        {label:'Investimento',data:dataInvest,borderColor:'#f44336',backgroundColor:'#f44336',tension:0.3},
+        {label:'Fluxo Líquido',data:dataNet,borderColor:'#4caf50',backgroundColor:'#4caf50',tension:0.3},
+        {label:'Acumulado',data:dataCum,borderColor:'#c9a84b',backgroundColor:'#c9a84b',tension:0.3}
       ]
     },
-    options:{
-      responsive:true,
-      plugins:{legend:{position:'bottom'}},
-      scales:{y:{beginAtZero:true,title:{display:true,text:'R$'}},x:{title:{display:true,text:'Mês'}}}
-    }
+    options:{responsive:true,plugins:{legend:{position:'top'}}}
   });
 }
 
-// ===== Selecionar Projeto =====
-function selectProject(i){
-  selectedProject=i;
-  const p=projects[i]; const comp=computeProject(p);
-  const dArea=document.getElementById('detailArea');
-  dArea.innerHTML=`<div class="card">
-    <strong>${p.name} — ${p.city}</strong>
-    <table style="width:100%;border-collapse:collapse;margin-top:6px">
-      <thead><tr><th>Mês</th><th>Receita</th><th>Investimento</th><th>Fluxo Líquido</th><th>Acumulado</th></tr></thead>
-      <tbody>${comp.flow.map(f=>`<tr>
-        <td>${f.month}</td>
-        <td>R$ ${f.receita.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-        <td>R$ ${f.invest.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-        <td>R$ ${f.net.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-        <td>R$ ${comp.cumFlow[f.month-1].toLocaleString('pt-BR',{minimumFractionDigits:2})}</td>
-      </tr>`).join('')}</tbody>
-    </table>
-  </div>`;
-  renderProjectChart(i);
-}
-
-// ===== Eventos =====
+// Login
 document.getElementById('btnLogin').addEventListener('click',()=>{
   const val=document.getElementById('pwd').value;
-  if(val===PASSWORD){document.getElementById('loginModal').style.display='none';document.getElementById('app').style.display='flex';loadCfg();renderSidebar();}
-  else alert('Senha incorreta!');
+  if(val===PASSWORD){
+    document.getElementById('loginModal').style.display='none';
+    document.getElementById('app').style.display='flex';
+    loadCfg(); renderSidebar(); renderCharts();
+  } else alert('Senha incorreta!');
 });
-document.getElementById('search').addEventListener('input',renderSidebar);
-document.getElementById('entradaPct').addEventListener('input',saveCfg);
-document.getElementById('entradaParc').addEventListener('input',saveCfg);
-document.getElementById('parcelasRestantes').addEventListener('input',saveCfg);
 
+// Eventos
 document.getElementById('btnNew').addEventListener('click',()=>{
-  const newProj={id:Date.now(),name:"Novo Projeto",city:"Cidade",units:10,area:50,price_m2:5000,cost_m2:2500,months:12,pre_launch_sales:1,launch_sales:1,monthly_sales:2};
-  projects.push(newProj); renderSidebar();
+  const newId=Math.max(...projects.map(p=>p.id))+1;
+  projects.push({id:newId,name:"Novo Projeto",city:"Cidade",units:10,area:70,price_m2:5000,cost_m2:2500,months:24,pre_launch_sales:1,launch_sales:2,monthly_sales:2});
+  renderSidebar(); renderCharts();
 });
-document.getElementById('btnExport').addEventListener('click',()=>{
-  const blob=new Blob([JSON.stringify(projects,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='projects.json'; a.click();
-});
-document.getElementById('btnDownloadCsv').addEventListener('click',()=>{
-  let csv="id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales\n";
-  projects.forEach(p=>{csv+=`${p.id},"${p.name}","${p.city}",${p.units},${p.area},${p.price_m2},${p.cost_m2},${p.months},${p.pre_launch_sales},${p.launch_sales},${p.monthly_sales}\n`});
-  const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='projects.csv'; a.click();
-});
+document.getElementById('btnPublish').addEventListener('click',()=>{saveCfg();renderSidebar();renderCharts();alert('Alterações salvas localmente.');});
+document.getElementById('entradaPct').addEventListener('change',saveCfg);
+document.getElementById('entradaParc').addEventListener('change',saveCfg);
+document.getElementById('parcelasRestantes').addEventListener('change',saveCfg);
 </script>
+
 </body>
 </html>
