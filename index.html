@@ -150,196 +150,281 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
 </div>
 
 <script>
-/*==================== Login ====================*/
-const pwdField=document.getElementById('pwd'), loginModal=document.getElementById('loginModal');
-document.getElementById('btnLogin').addEventListener('click',()=>{
-  if(pwdField.value==='Investidor'){loginModal.style.display='none';document.getElementById('app').style.display='flex';}else{alert('Senha incorreta');}
-});
-/*==================== Helpers ====================*/
-function formatMoney(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
-function debounce(fn,delay=300){let t; return (...args)=>{clearTimeout(t); t=setTimeout(()=>fn(...args),delay);}}
+// ===== Dados iniciais =====
+let projects = [
+  {id:1,name:"Residencial Ubatuba Premium",city:"Ubatuba - SP",units:30,area:80,price_m2:7000,cost_m2:2800,months:24,pre_launch_sales:2,launch_sales:4,monthly_sales:3},
+  {id:2,name:"Residencial Caraguá Vista",city:"Caraguá - SP",units:24,area:75,price_m2:6500,cost_m2:2600,months:22,pre_launch_sales:1,launch_sales:3,monthly_sales:3},
+  {id:3,name:"Residencial Guarujá Prime",city:"Guarujá - SP",units:36,area:90,price_m2:7200,cost_m2:3000,months:28,pre_launch_sales:3,launch_sales:5,monthly_sales:4}
+];
+const PASSWORD="Investidor";
+const colors=['#c9a84b','#b58f3a','#d9b86b','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 
-/*==================== Project Class ====================*/
-class Project{
-  constructor(data){Object.assign(this,data);this.results=null;}
-  compute(cfg){
-    const months=this.months||24;
-    const price_unit_full=this.area*this.price_m2;
-    const VGV=this.units*price_unit_full;
-    const totalConstruction=this.units*this.area*this.cost_m2;
-    const receiptsPre=[], receiptsLaunch=[], receiptsMonthly=[], investments=[], costs=[];
-    function ensureLen(arr,len){while(arr.length<len) arr.push(0);}
-    function addSalePayments(saleMonth,price_unit,targetArray){
-      const entradaPct=(cfg.entradaPct||30)/100;
-      const entradaMonths=cfg.entradaMonths||6;
-      const entradaTotal=price_unit*entradaPct;
-      const entradaParcel=entradaTotal/entradaMonths;
-      const restanteTotal=price_unit*(1-entradaPct);
-      const restParc=cfg.parcelasRestantes||24;
-      for(let m=0;m<entradaMonths;m++){ensureLen(targetArray,saleMonth+m+1);targetArray[saleMonth+m]+=entradaParcel;}
-      for(let m=0;m<restParc;m++){ensureLen(targetArray,saleMonth+entradaMonths+m+1);targetArray[saleMonth+entradaMonths+m]+=restanteTotal/restParc;}
-    }
-    function distributeUnits(units,startMonth,targetArray,type){
-      for(let u=0;u<units;u++){
-        let price=price_unit_full;
-        if(type==='pre') price*=(1-(cfg.discountPre||0)/100);
-        if(type==='launch') price*=(1-(cfg.discountLaunch||0)/100);
-        addSalePayments(startMonth+u,price,targetArray);
-      }
-    }
-    distributeUnits(this.pre_launch_sales||0,0,receiptsPre,'pre');
-    distributeUnits(this.launch_sales||0,this.pre_launch_sales||0,receiptsLaunch,'launch');
-    let unitsSoldMonthly=0, monthIdx=(this.pre_launch_sales||0)+(this.launch_sales||0);
-    while(unitsSoldMonthly<this.units-((this.pre_launch_sales||0)+(this.launch_sales||0))){
-      const uThisMonth=Math.min(this.monthly_sales||0,this.units-((this.pre_launch_sales||0)+(this.launch_sales||0))-unitsSoldMonthly);
-      distributeUnits(uThisMonth,monthIdx,receiptsMonthly,'monthly');
-      unitsSoldMonthly+=uThisMonth; monthIdx++; if(monthIdx>1000) break;
-    }
-    const finalLen=Math.max(receiptsPre.length,receiptsLaunch.length,receiptsMonthly.length,months);
-    const incc=0.0045, den=(months*(months+1))/2;
-    for(let m=1;m<=finalLen;m++){ investments[m-1]=m<=months?totalConstruction*m/den*Math.pow(1+incc,m):0; }
-    for(let m=0;m<finalLen;m++){costs[m]=0;if(m<months){costs[m]+=0.015*VGV;costs[m]+=8000+3000;if(m===11) costs[m]+=0.01*VGV;if(m===0) costs[m]+=0.05*totalConstruction;}}
-    const receipts=[];
-    for(let i=0;i<finalLen;i++){receipts[i]=(receiptsPre[i]||0)+(receiptsLaunch[i]||0)+(receiptsMonthly[i]||0);}
-    const net=receipts.map((r,i)=>r-(investments[i]||0)-(costs[i]||0));
-    const irrMonthly=irr(net); const irrAnnual=isFinite(irrMonthly)?Math.pow(1+irrMonthly,12)-1:NaN;
-    let cumul=0, payback='--';for(let i=0;i<net.length;i++){cumul+=net[i];if(cumul>=0){payback=i+1;break;}}
-    const totalNet=net.reduce((s,v)=>s+v,0), totalInvestment=investments.reduce((s,v)=>s+v,0);
-    const roi=totalInvestment===0?0:(totalNet/totalInvestment)*100;
-    this.results={VGV,totalConstruction,roi,irrAnnual,npvVal:net.reduce((s,v,i)=>s+v/Math.pow(1+Math.pow(1+0.12,1/12)-1,i),0),payback,receiptsPre,receiptsLaunch,receiptsMonthly,receipts,investments,costs,net};
-    return this.results;
+// ===== Persistência das configurações de venda =====
+const cfgKey = 'aps_sale_cfg';
+let saleCfg = { discountPre:10, discountLaunch:5, parcelasRestantes:24, entradaPct:30, entradaMonths:6 };
+
+function loadCfg(){
+  const s = localStorage.getItem(cfgKey);
+  if(s) try { saleCfg = Object.assign(saleCfg, JSON.parse(s)); } catch(e){}
+  document.getElementById('discountPre').value = saleCfg.discountPre;
+  document.getElementById('discountLaunch').value = saleCfg.discountLaunch;
+  document.getElementById('parcelasRestantes').value = saleCfg.parcelasRestantes;
+  document.getElementById('entradaPct').value = saleCfg.entradaPct;
+  document.getElementById('entradaMonths').value = saleCfg.entradaMonths;
+}
+function saveCfg(){
+  saleCfg.discountPre = Number(document.getElementById('discountPre').value) || 0;
+  saleCfg.discountLaunch = Number(document.getElementById('discountLaunch').value) || 0;
+  saleCfg.parcelasRestantes = Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes').value) || 24));
+  saleCfg.entradaPct = Math.min(100, Math.max(0, Number(document.getElementById('entradaPct').value) || 30));
+  saleCfg.entradaMonths = Math.max(1, Math.floor(Number(document.getElementById('entradaMonths').value) || 6));
+  localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
+  renderSidebar();
+}
+
+// ===== Funções financeiras =====
+function irr(values, guess = 0.01) {
+  const eps = 1e-7;
+  const maxIter = 1000;
+  let rate = guess;
+  const npv = r => values.reduce((s, v, i) => s + v / Math.pow(1 + r, i), 0);
+  const dnpv = r => values.reduce((s, v, i) => s - i * v / Math.pow(1 + r, i + 1), 0);
+  for (let i = 0; i < maxIter; i++) {
+    const f = npv(rate);
+    const df = dnpv(rate);
+    if (Math.abs(df) < 1e-12) break;
+    const nr = rate - f / df;
+    if (Math.abs(nr - rate) < eps) return rate;
+    rate = nr;
   }
-}
-
-/*==================== IRR Function ====================*/
-function irr(values, guess=0.1){
-  const maxIter=1000, tol=1e-6;
-  let rate=guess;
-  for(let i=0;i<maxIter;i++){
-    let npv=0,dnpv=0;
-    for(let t=0;t<values.length;t++){npv+=values[t]/Math.pow(1+rate,t);dnpv-=t*values[t]/Math.pow(1+rate,t+1);}
-    const newRate=rate-npv/dnpv;if(Math.abs(newRate-rate)<tol)return newRate;rate=newRate;
+  let low = -0.999, high = 10;
+  for (let i = 0; i < 200; i++) {
+    const mid = (low + high) / 2;
+    const v = npv(mid);
+    if (Math.abs(v) < 1e-6) return mid;
+    if (v > 0) low = mid; else high = mid;
   }
-  return NaN;
+  return rate;
 }
 
-/*==================== App State ====================*/
-let projects=[], cfg={}, selectedCompare=[];
+// ===== Cálculo do projeto =====
+function computeProject(p) {
+  const cfg = saleCfg;
+  const months = p.months;
+  const price_unit_full = p.area * p.price_m2;
+  const VGV = p.units * price_unit_full;
+  const totalConstruction = p.units * p.area * p.cost_m2;
 
-/*==================== DOM References ====================*/
-const projectsList=document.getElementById('projectsList'),
-      projectDetail=document.getElementById('projectDetail'),
-      discountPreInput=document.getElementById('discountPre'),
-      discountLaunchInput=document.getElementById('discountLaunch'),
-      entradaPctInput=document.getElementById('entradaPct'),
-      entradaMonthsInput=document.getElementById('entradaMonths'),
-      parcelasRestantesInput=document.getElementById('parcelasRestantes'),
-      btnNew=document.getElementById('btnNew'),
-      searchInput=document.getElementById('search'),
-      chartPortfolioCanvas=document.getElementById('chartPortfolio'),
-      chartCompareCanvas=document.getElementById('chartCompare'),
-      vgvTotalSpan=document.getElementById('vgvTotal');
+  const receiptsPre = [], receiptsLaunch = [], receiptsMonthly = [], investments = [], costs = [];
 
-/*==================== Config ====================*/
-function updateCfg(){
-  cfg={discountPre:Number(discountPreInput.value),
-       discountLaunch:Number(discountLaunchInput.value),
-       entradaPct:Number(entradaPctInput.value),
-       entradaMonths:Number(entradaMonthsInput.value),
-       parcelasRestantes:Number(parcelasRestantesInput.value)};
-  projects.forEach(p=>p.compute(cfg));
-  renderProjects(); renderPortfolioChart(); renderCompareChart();
+  function ensureLen(arr,len){while(arr.length<len) arr.push(0);}
+  function addSalePayments(saleMonth, price_unit, targetArray){
+    const entradaPct = (cfg.entradaPct || 30) / 100;
+    const entradaMonths = cfg.entradaMonths || 6;
+    const entradaTotal = price_unit * entradaPct;
+    const entradaParcel = entradaTotal / entradaMonths;
+    const restanteTotal = price_unit * (1 - entradaPct);
+    const restParc = cfg.parcelasRestantes || 24;
+
+    for(let m=0;m<entradaMonths;m++){ ensureLen(targetArray,saleMonth+m+1); targetArray[saleMonth+m]+=entradaParcel; }
+    for(let m=0;m<restParc;m++){ ensureLen(targetArray,saleMonth+entradaMonths+m+1); targetArray[saleMonth+entradaMonths+m]+=restanteTotal/restParc; }
+  }
+  function distributeUnits(units,startMonth,targetArray,type){
+    for(let u=0;u<units;u++){
+      let price_unit = price_unit_full;
+      if(type==='pre') price_unit *= (1 - cfg.discountPre/100);
+      if(type==='launch') price_unit *= (1 - cfg.discountLaunch/100);
+      addSalePayments(startMonth+u,price_unit,targetArray);
+    }
+  }
+
+  distributeUnits(p.pre_launch_sales,0,receiptsPre,'pre');
+  distributeUnits(p.launch_sales,p.pre_launch_sales,receiptsLaunch,'launch');
+
+  let unitsSoldMonthly = 0;
+  let monthIdx = p.pre_launch_sales + p.launch_sales;
+  while(unitsSoldMonthly < p.units - (p.pre_launch_sales + p.launch_sales)){
+    const unitsThisMonth = Math.min(p.monthly_sales, p.units - (p.pre_launch_sales + p.launch_sales) - unitsSoldMonthly);
+    distributeUnits(unitsThisMonth, monthIdx, receiptsMonthly, 'monthly');
+    unitsSoldMonthly += unitsThisMonth;
+    monthIdx++;
+    if(monthIdx>1000) break;
+  }
+
+  const finalLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, months);
+
+  const incc = 0.0045, den = (months*(months+1))/2;
+  for(let m=1;m<=finalLen;m++){ investments[m-1] = m<=months ? totalConstruction*m/den*Math.pow(1+incc,m) : 0; }
+
+  for(let m=0;m<finalLen;m++){
+    costs[m]=0;
+    if(m<months){
+      costs[m]+=0.015*VGV;
+      costs[m]+=8000+3000;
+      if(m===11) costs[m]+=0.01*VGV;
+      if(m===0) costs[m]+=0.05*totalConstruction;
+    }
+  }
+
+  const receipts=[];
+  for(let i=0;i<finalLen;i++){ receipts[i] = (receiptsPre[i]||0)+(receiptsLaunch[i]||0)+(receiptsMonthly[i]||0); }
+
+  const net = receipts.map((r,i)=>r-(investments[i]||0)-(costs[i]||0));
+
+  const irrMonthly = irr(net);
+  const irrAnnual = isFinite(irrMonthly) ? Math.pow(1+irrMonthly,12)-1 : NaN;
+
+  let cumul=0, payback='--';
+  for(let i=0;i<net.length;i++){ cumul+=net[i]; if(cumul>=0){ payback=i+1; break; } }
+
+  const totalNet = net.reduce((s,v)=>s+v,0);
+  const totalInvestment = investments.reduce((s,v)=>s+v,0);
+  const roi = totalInvestment===0 ? 0 : (totalNet/totalInvestment)*100;
+
+  return { receiptsPre, receiptsLaunch, receiptsMonthly, receipts, investments, costs, net, irrMonthly, irrAnnual, payback, roi, VGV, totalConstruction };
 }
-[discountPreInput,discountLaunchInput,entradaPctInput,entradaMonthsInput,parcelasRestantesInput].forEach(input=>{
-  input.addEventListener('input',debounce(updateCfg,300));
-});
 
-/*==================== Render Functions ====================*/
-function renderProjects(){
-  projectsList.innerHTML='';
+// ===== Renderização =====
+let portfolioChart=null;
+function renderSidebar(){
+  const el=document.getElementById('projectsList'); el.innerHTML='';
+  const searchVal=document.getElementById('search').value.toLowerCase();
+
   projects.forEach((p,i)=>{
-    const card=document.createElement('div'); card.className='project-card';
-    card.innerHTML=`
-      <div class="info">
-        <strong>${p.name}</strong>
-        <div class="small">Unidades: ${p.units} | Área: ${p.area} m² | Custo m²: ${p.cost_m2}</div>
+    if(searchVal && !p.name.toLowerCase().includes(searchVal)) return;
+    const d=computeProject(p);
+
+    const div=document.createElement('div'); div.className='project-card';
+    const info=document.createElement('div'); info.className='info';
+
+    info.innerHTML=`
+      <label><strong>Nome</strong></label>
+      <input type="text" value="${p.name}" data-field="name">
+      <label><strong>Cidade</strong></label>
+      <input type="text" value="${p.city}" data-field="city">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label>Unidades</label><input type="number" value="${p.units}" data-field="units"></div>
+        <div><label>Área (m²)</label><input type="number" value="${p.area}" data-field="area"></div>
+        <div><label>Preço/m²</label><input type="number" value="${p.price_m2}" data-field="price_m2"></div>
+        <div><label>Custo/m²</label><input type="number" value="${p.cost_m2}" data-field="cost_m2"></div>
+        <div><label>Meses</label><input type="number" value="${p.months}" data-field="months"></div>
+        <div><label>Pré-lançamento</label><input type="number" value="${p.pre_launch_sales}" data-field="pre_launch_sales"></div>
+        <div><label>Lançamento</label><input type="number" value="${p.launch_sales}" data-field="launch_sales"></div>
+        <div><label>Vendas/mês</label><input type="number" value="${p.monthly_sales}" data-field="monthly_sales"></div>
       </div>
       <div class="kpi">
-        <div class="item ${p.results.roi<10?'alert':''}"><div class="small">ROI</div><div class="value">${p.results.roi.toFixed(1)}%</div></div>
-        <div class="item ${p.results.irrAnnual<0.05?'alert':''}"><div class="small">TIR</div><div class="value">${(p.results.irrAnnual*100).toFixed(1)}%</div></div>
-        <div class="item ${p.results.payback>24?'alert':''}"><div class="small">Payback</div><div class="value">${p.results.payback}</div></div>
+        <div class="item"><div class="small">VGV</div><div class="value">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+        <div class="item"><div class="small">ROI</div><div class="value">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
+        <div class="item"><div class="small">TIR</div><div class="value">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
       </div>
     `;
-    card.addEventListener('click',()=>{renderProjectDetail(p); toggleCompare(i);});
-    projectsList.appendChild(card);
+
+    info.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input',()=>{
+        const field=inp.dataset.field;
+        if(['units','area','price_m2','cost_m2','months','pre_launch_sales','launch_sales','monthly_sales'].includes(field)) p[field]=Number(inp.value);
+        else p[field]=inp.value;
+        renderSidebar();
+        if(document.getElementById('detailArea').children.length) selectProject(p.id);
+      });
+    });
+
+    div.appendChild(info); div.addEventListener('click',()=>selectProject(p.id));
+    el.appendChild(div);
   });
+
+  updatePortfolioChart();
 }
 
-function renderProjectDetail(p){
-  projectDetail.innerHTML=`
-    <strong>${p.name}</strong>
-    <div class="small">Detalhes e Fluxo de Caixa</div>
-    <div class="kpi" style="margin-top:10px">
-      <div class="item"><div class="small">ROI</div><div class="value">${p.results.roi.toFixed(1)}%</div></div>
-      <div class="item"><div class="small">TIR</div><div class="value">${(p.results.irrAnnual*100).toFixed(1)}%</div></div>
-      <div class="item"><div class="small">Payback</div><div class="value">${p.results.payback}</div></div>
+function updatePortfolioChart(){
+  const totals=projects.map(p=>computeProject(p).VGV);
+  const ctx=document.getElementById('chartPortfolio').getContext('2d');
+  if(portfolioChart) portfolioChart.destroy();
+  portfolioChart=new Chart(ctx,{type:'doughnut',data:{labels:projects.map(p=>p.name),datasets:[{data:totals,backgroundColor:colors}]},options:{plugins:{legend:{position:'bottom',labels:{color:'#fff'}}}}});
+  document.getElementById('totalVgv').innerText=totals.reduce((s,v)=>s+v,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  const avgRoi=projects.reduce((s,p)=> s + computeProject(p).roi,0)/projects.length;
+  const avgIrr=projects.reduce((s,p)=> s + computeProject(p).irrAnnual,0)/projects.length;
+  document.getElementById('avgRoi').innerText=isFinite(avgRoi)?avgRoi.toFixed(1)+'%':'--';
+  document.getElementById('avgIrr').innerText=isFinite(avgIrr)?(avgIrr*100).toFixed(1)+'%':'--';
+}
+
+// ===== Projeto selecionado =====
+function selectProject(id){
+  const p = projects.find(x=>x.id===id);
+  const d = computeProject(p);
+  const area=document.getElementById('detailArea');
+
+  area.innerHTML=`
+    <div class="card">
+      <div style="display:flex;justify-content:space-between">
+        <div><strong>${p.name}</strong><div class="small">${p.city}</div></div>
+        <div style="text-align:right"><div class="small">VGV</div><div style="font-weight:800;color:var(--gold)">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:12px">
+        <div style="flex:1"><canvas id="chartCash${id}" height="140"></canvas></div>
+        <div style="width:320px">
+          <div class="card">
+            <div class="small">Resumo</div>
+            <div style="margin-top:8px">
+              <strong>ROI:</strong> ${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}<br>
+              <strong>TIR (a.a.):</strong> ${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}<br>
+              <strong>Payback:</strong> ${d.payback} meses
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   `;
+
+  const ctx=document.getElementById('chartCash'+id).getContext('2d');
+  const labels=Array.from({length:d.net.length},(_,i)=>'M'+(i+1));
+  new Chart(ctx,{type:'line',data:{
+    labels,
+    datasets:[
+      {label:'Pré-lançamento',data:d.receiptsPre,borderColor:'#ff9800',backgroundColor:'rgba(255,152,0,0.2)',fill:true,tension:0.3},
+      {label:'Lançamento',data:d.receiptsLaunch,borderColor:'#4caf50',backgroundColor:'rgba(76,175,80,0.2)',fill:true,tension:0.3},
+      {label:'Vendas Mensais',data:d.receiptsMonthly,borderColor:'#2196f3',backgroundColor:'rgba(33,150,243,0.2)',fill:true,tension:0.3},
+      {label:'Fluxo Líquido',data:d.net,borderColor:'#c9a84b',backgroundColor:'rgba(201,168,75,0.08)',fill:true,tension:0.3}
+    ]
+  },options:{plugins:{legend:{labels:{color:'#fff'}},tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}}},interaction:{mode:'nearest',axis:'x',intersect:false},scales:{x:{ticks:{color:'#fff'}},y:{ticks:{color:'#fff'}}}}});
 }
 
-/*==================== Charts ====================*/
-let chartPortfolio=null, chartCompare=null;
-
-function renderPortfolioChart(){
-  const labels=projects.map((p,i)=>p.name);
-  const data=projects.map(p=>p.results.VGV);
-  vgvTotalSpan.innerText=formatMoney(data.reduce((s,v)=>s+v,0));
-  if(chartPortfolio) chartPortfolio.destroy();
-  chartPortfolio=new Chart(chartPortfolioCanvas,{type:'bar',data:{labels, datasets:[{label:'VGV',data,backgroundColor:'#c9a84b'}]},options:{plugins:{legend:{display:false}}}});
-}
-
-function toggleCompare(idx){
-  if(selectedCompare.includes(idx)) selectedCompare=selectedCompare.filter(x=>x!==idx);
-  else{if(selectedCompare.length<3) selectedCompare.push(idx);}
-  renderCompareChart();
-}
-
-function renderCompareChart(){
-  if(chartCompare) chartCompare.destroy();
-  const labels=[]; const datasets=[];
-  selectedCompare.forEach(i=>{
-    const p=projects[i]; if(!p) return;
-    labels.length=p.results.net.length; for(let j=0;j<p.results.net.length;j++) labels[j]=`M${j+1}`;
-    datasets.push({label:p.name,data:p.results.net,fill:false,borderColor:'#c9a84b',tension:0.3});
-  });
-  chartCompare=new Chart(chartCompareCanvas,{type:'line',data:{labels,datasets},options:{plugins:{legend:{display:true}}}});
-}
-
-/*==================== Add Project ====================*/
-btnNew.addEventListener('click',()=>{
-  const name=prompt('Nome do projeto:'); if(!name) return;
-  const p=new Project({name,units:10,area:80,cost_m2:3500,pre_launch_sales:2,launch_sales:3,monthly_sales:1,months:24});
-  p.compute(cfg); projects.push(p); renderProjects(); renderPortfolioChart();
+// ===== Eventos globais =====
+document.getElementById('btnLogin').addEventListener('click',()=>{
+  if(document.getElementById('pwd').value===PASSWORD){
+    document.getElementById('loginModal').style.display='none';
+    document.getElementById('app').style.display='flex';
+    const saved=localStorage.getItem('aps_projects');
+    if(saved) try{ projects=JSON.parse(saved); } catch(e){}
+    loadCfg();
+    renderSidebar();
+  } else alert('Senha incorreta');
 });
 
-/*==================== Demo Initial Data ====================*/
-function demoData(){
-  const p1=new Project({name:'Residencial Sol',units:10,area:85,cost_m2:3800,pre_launch_sales:2,launch_sales:3,monthly_sales:1,months:24});
-  const p2=new Project({name:'Edifício Lua',units:12,area:70,cost_m2:3600,pre_launch_sales:1,launch_sales:4,monthly_sales:1,months:24});
-  const p3=new Project({name:'Vila Estrela',units:8,area:95,cost_m2:4000,pre_launch_sales:2,launch_sales:2,monthly_sales:1,months:24});
-  projects=[p1,p2,p3];
-  updateCfg();
-}
-demoData();
+document.getElementById('btnExport').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(projects,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='aps_projects.json'; a.click(); URL.revokeObjectURL(a.href);
+});
 
-/*==================== Search ====================*/
-searchInput.addEventListener('input',debounce(()=>{
-  const term=searchInput.value.toLowerCase();
-  document.querySelectorAll('.project-card').forEach((card,i)=>{
-    card.style.display=projects[i].name.toLowerCase().includes(term)?'flex':'none';
-  });
-},300));
+document.getElementById('btnPublish').addEventListener('click',()=>{ localStorage.setItem('aps_projects',JSON.stringify(projects)); saveCfg(); alert('Alterações salvas.'); });
+document.getElementById('btnReset').addEventListener('click',()=>{ if(confirm('Restaurar valores iniciais?')){ localStorage.removeItem('aps_projects'); localStorage.removeItem(cfgKey); location.reload(); } });
+document.getElementById('btnNew').addEventListener('click',()=>{ const id=projects.length+1; projects.push({id:id,name:'Novo Empreendimento '+id,city:'Cidade',units:10,area:70,price_m2:5000,cost_m2:2000,months:18,pre_launch_sales:0,launch_sales:0,monthly_sales:2}); renderSidebar(); });
+document.getElementById('btnDownloadCsv').addEventListener('click',()=>{
+  const rows=['id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales'];
+  projects.forEach(p=>rows.push([p.id,p.name,p.city,p.units,p.area,p.price_m2,p.cost_m2,p.months,p.pre_launch_sales,p.launch_sales,p.monthly_sales].join(',')));
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='aps_projects.csv'; a.click(); URL.revokeObjectURL(a.href);
+});
 
+['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',saveCfg);
+});
+
+window.addEventListener('load',()=>{
+  const saved=localStorage.getItem('aps_projects');
+  if(saved) try{projects=JSON.parse(saved);} catch(e){}
+  loadCfg();
+});
 </script>
 </body>
 </html>
