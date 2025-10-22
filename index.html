@@ -21,7 +21,7 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
 .brand{font-weight:800;color:var(--gold);letter-spacing:0.6px}
 .header .meta{color:var(--muted);font-size:13px}
 .container{display:flex;height:calc(100vh - 72px);gap:18px;padding:18px}
-.sidebar{width:340px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:14px;overflow:auto}
+.sidebar{width:360px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:14px;overflow:auto}
 .content{flex:1;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));border-radius:12px;padding:14px;overflow:auto}
 .section-title{font-weight:700;color:var(--gold);margin-bottom:8px}
 .project-card{background:var(--card);padding:12px;border-radius:10px;margin-bottom:12px;display:flex;gap:12px;align-items:flex-start;border:1px solid rgba(255,255,255,0.03);cursor:pointer;flex-direction:column}
@@ -54,8 +54,10 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
 .tooltip{position:relative;display:inline-block}
 .tooltip .tt{visibility:hidden;width:260px;background:#0c0c0c;color:var(--muted);text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:10;bottom:130%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .12s}
 .tooltip:hover .tt{visibility:visible;opacity:1}
+table{width:100%;border-collapse:collapse}
+table th, table td{border:1px solid rgba(255,255,255,0.1);padding:6px;text-align:right;font-size:12px;color:var(--accent)}
+table th{text-align:center;background:rgba(255,255,255,0.05)}
 @media(max-width:980px){.container{flex-direction:column}.sidebar{width:auto}}
-table{border-collapse:collapse;width:100%} th,td{border:1px solid rgba(255,255,255,0.05);padding:6px;text-align:right} th{background:rgba(255,255,255,0.02);text-align:center;}
 </style>
 </head>
 <body>
@@ -96,17 +98,12 @@ table{border-collapse:collapse;width:100%} th,td{border:1px solid rgba(255,255,2
         <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0">
 
         <div><strong>Condições de Venda</strong></div>
-        <label>Porcentagem de entrada (%)</label>
-        <input id="entradaPct" type="number" min="0" max="100" step="1" value="30">
-        <label>Quantidade de parcelas da entrada</label>
+        <label>Entrada (%)</label>
+        <input id="entradaPct" type="number" min="0" max="100" step="0.1" value="30">
+        <label>Nº de parcelas da entrada</label>
         <input id="entradaParc" type="number" min="1" step="1" value="6">
-        <label>Parcelas restantes do saldo</label>
+        <label>Parcelas restantes do imóvel</label>
         <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
-
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button id="btnExport" class="button">Exportar JSON</button>
-          <button id="btnReset" class="button ghost">Restaurar</button>
-        </div>
       </div>
     </div>
     <div class="footer small">APSPARCEIROS Invest · Template editável</div>
@@ -119,9 +116,8 @@ table{border-collapse:collapse;width:100%} th,td{border:1px solid rgba(255,255,2
         <div class="small">Edite os projetos e clique em salvar</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <div class="tooltip"><button id="btnHelp" class="button ghost">Legenda</button><div class="tt"><strong>ROI</strong>: retorno sobre o capital investido.<br><strong>TIR</strong>: taxa interna de retorno anualizada.<br><strong>Payback</strong>: meses para recuperar o aporte.</div></div>
-        <button id="btnDownloadCsv" class="button ghost">Download CSV</button>
         <button id="btnPublish" class="button">Salvar alterações</button>
+        <button id="btnDownloadCsv" class="button ghost">Download CSV</button>
       </div>
     </div>
 
@@ -129,37 +125,30 @@ table{border-collapse:collapse;width:100%} th,td{border:1px solid rgba(255,255,2
       <section>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div><strong>Visão Geral do Portfólio</strong><div class="small">Resumo consolidado</div></div>
+            <div><strong>Visão Geral do Portfólio</strong></div>
             <div style="text-align:right">
               <div class="small">VGV total</div>
               <div style="font-weight:800;color:var(--gold)" id="totalVgv">R$ 0</div>
             </div>
           </div>
-          <div style="display:flex;gap:12px;margin-top:12px">
-            <div style="flex:1"><canvas id="chartPortfolio" height="120"></canvas></div>
-            <div style="width:220px">
-              <div class="kpi">
-                <div class="item"><div class="small">ROI médio</div><div class="value" id="avgRoi">--</div></div>
-                <div class="item"><div class="small">TIR média</div><div class="value" id="avgIrr">--</div></div>
-              </div>
-              <div style="margin-top:10px" class="small">Clique num projeto no menu lateral para ver detalhes.</div>
-            </div>
-          </div>
+          <canvas id="chartPortfolio" height="140" style="margin-top:12px"></canvas>
         </div>
 
         <div id="detailArea"></div>
-        <canvas id="chartDetail" height="200" style="margin-top:12px"></canvas>
       </section>
 
       <aside>
         <div class="card">
           <div class="section-title">Indicadores rápidos</div>
-          <table style="width:100%"><tbody>
-            <tr><td class="small">VGV</td><td class="small">Valor Geral de Vendas</td></tr>
-            <tr><td class="small">ROI</td><td class="small">Retorno sobre o capital</td></tr>
-            <tr><td class="small">TIR</td><td class="small">Taxa interna de retorno</td></tr>
-            <tr><td class="small">Payback</td><td class="small">Meses para recuperar investimento</td></tr>
-          </tbody></table>
+          <table>
+            <tbody>
+              <tr><td class="small">VGV</td><td class="small">Valor Geral de Vendas</td></tr>
+              <tr><td class="small">ROI</td><td class="small">Retorno sobre o capital</td></tr>
+              <tr><td class="small">TIR</td><td class="small">Taxa interna de retorno</td></tr>
+              <tr><td class="small">Payback</td><td class="small">Meses para recuperar investimento</td></tr>
+              <tr><td class="small">VLP</td><td class="small">Valor líquido presente</td></tr>
+            </tbody>
+          </table>
         </div>
       </aside>
     </div>
@@ -167,215 +156,143 @@ table{border-collapse:collapse;width:100%} th,td{border:1px solid rgba(255,255,2
 </div>
 
 <script>
-// ===== Dados iniciais =====
+// ===== Configuração e dados iniciais =====
+const PASSWORD="Investidor";
+const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 let projects=[
   {id:1,name:"Residencial Ubatuba Premium",city:"Ubatuba - SP",units:30,area:80,price_m2:7000,cost_m2:2800,months:24,pre_launch_sales:2,launch_sales:4,monthly_sales:3},
   {id:2,name:"Residencial Caraguá Vista",city:"Caraguá - SP",units:24,area:75,price_m2:6500,cost_m2:2600,months:22,pre_launch_sales:1,launch_sales:3,monthly_sales:3},
   {id:3,name:"Residencial Guarujá Prime",city:"Guarujá - SP",units:36,area:90,price_m2:7200,cost_m2:3000,months:28,pre_launch_sales:3,launch_sales:5,monthly_sales:4}
 ];
 
-const PASSWORD="Investidor";
-const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
-let selectedProject=null;
-
-// ===== Configurações de venda =====
-const cfgKey='aps_sale_cfg';
 let saleCfg={entradaPct:30,entradaParc:6,parcelasRestantes:24};
-function loadCfg(){
-  const s=localStorage.getItem(cfgKey);
+function loadCfg(){ 
+  const s=localStorage.getItem('aps_sale_cfg'); 
   if(s) try{saleCfg=Object.assign(saleCfg,JSON.parse(s));}catch(e){}
   document.getElementById('entradaPct').value=saleCfg.entradaPct;
   document.getElementById('entradaParc').value=saleCfg.entradaParc;
   document.getElementById('parcelasRestantes').value=saleCfg.parcelasRestantes;
 }
-function saveCfg(){
+function saveCfg(){ 
   saleCfg.entradaPct=Number(document.getElementById('entradaPct').value)||30;
-  saleCfg.entradaParc=Number(document.getElementById('entradaParc').value)||6;
-  saleCfg.parcelasRestantes=Number(document.getElementById('parcelasRestantes').value)||24;
-  localStorage.setItem(cfgKey,JSON.stringify(saleCfg));
-  renderSidebar();
+  saleCfg.entradaParc=Math.max(1,Math.floor(Number(document.getElementById('entradaParc').value)||6));
+  saleCfg.parcelasRestantes=Math.max(1,Math.floor(Number(document.getElementById('parcelasRestantes').value)||24));
+  localStorage.setItem('aps_sale_cfg',JSON.stringify(saleCfg));
 }
 
 // ===== Funções financeiras =====
-function irr(values, guess=0.01){
-  const eps=1e-7,maxIter=1000;let rate=guess;
-  const npv=r=>values.reduce((s,v,i)=>s+v/Math.pow(1+r,i),0);
-  const dnpv=r=>values.reduce((s,v,i)=>s-i*v/Math.pow(1+r,i+1),0);
-  for(let i=0;i<maxIter;i++){
-    const f=npv(rate),df=dnpv(rate);
-    if(Math.abs(df)<1e-12) break;
-    const nr=rate-f/df;
-    if(Math.abs(nr-rate)<eps) return rate;
-    rate=nr;
-  }
-  return rate;
-}
+function irr(values, guess=0.01){const eps=1e-7,maxIter=1000;let rate=guess;const npv=r=>values.reduce((s,v,i)=>s+v/Math.pow(1+r,i),0);const dnpv=r=>values.reduce((s,v,i)=>s-i*v/Math.pow(1+r,i+1),0);for(let i=0;i<maxIter;i++){const f=npv(rate),df=dnpv(rate);if(Math.abs(df)<1e-12) break;const nr=rate-f/df;if(Math.abs(nr-rate)<eps) return rate;rate=nr;}let low=-0.999,high=10;for(let i=0;i<200;i++){const mid=(low+high)/2,v=npv(mid);if(Math.abs(v)<1e-6) return mid;if(v>0) low=mid;else high=mid;}return rate;}
 
-// ===== Cálculo do projeto =====
+// ===== Cálculo de fluxo =====
 function computeProject(p){
   const cfg=saleCfg;
-  const months=p.months;
   const price_unit=p.area*p.price_m2;
   const VGV=p.units*price_unit;
   const totalConstruction=p.units*p.area*p.cost_m2;
-
   const receiptsPre=[],receiptsLaunch=[],receiptsMonthly=[];
   function ensureLen(arr,len){while(arr.length<len) arr.push(0);}
   function addSalePayments(saleMonth,price_unit,targetArray){
-    const entradaTotal=price_unit*(cfg.entradaPct/100);
+    const entradaTotal=price_unit*cfg.entradaPct/100;
     const entradaParcel=entradaTotal/cfg.entradaParc;
     const restanteTotal=price_unit-entradaTotal;
-    const restanteParc=cfg.parcelasRestantes;
-    for(let m=0;m<cfg.entradaParc;m++){ensureLen(targetArray,saleMonth+m+1);targetArray[saleMonth+m]+=entradaParcel;}
-    for(let m=0;m<restanteParc;m++){ensureLen(targetArray,saleMonth+cfg.entradaParc+m+1);targetArray[saleMonth+cfg.entradaParc+m]+=restanteTotal/restanteParc;}
+    const restParc=cfg.parcelasRestantes;
+    for(let m=0;m<cfg.entradaParc;m++){const idx=saleMonth+m;ensureLen(targetArray,idx+1);targetArray[idx]+=entradaParcel;}
+    for(let m=0;m<restParc;m++){const idx=saleMonth+cfg.entradaParc+m;ensureLen(targetArray,idx+1);targetArray[idx]+=restanteTotal/restParc;}
   }
-  function distributeUnits(units,startMonth,targetArray){
-    for(let u=0;u<units;u++){
-      addSalePayments(startMonth+u,price_unit,targetArray);
-    }
-  }
+  function distributeUnits(units,startMonth,arr){for(let u=0;u<units;u++){addSalePayments(startMonth+u,price_unit,arr);}}
   distributeUnits(p.pre_launch_sales,0,receiptsPre);
   distributeUnits(p.launch_sales,p.pre_launch_sales,receiptsLaunch);
-  let unitsSoldMonthly=0,monthIdx=p.pre_launch_sales+p.launch_sales;
-  while(unitsSoldMonthly < p.units-(p.pre_launch_sales+p.launch_sales)){
-    const unitsThisMonth=Math.min(p.monthly_sales,p.units-(p.pre_launch_sales+p.launch_sales)-unitsSoldMonthly);
-    distributeUnits(unitsThisMonth,monthIdx,receiptsMonthly);
-    unitsSoldMonthly+=unitsThisMonth; monthIdx++;
-    if(monthIdx>1000) break;
-  }
-
-  const finalLen=Math.max(receiptsPre.length,receiptsLaunch.length,receiptsMonthly.length,months);
-  const receipts=[];
-  for(let i=0;i<finalLen;i++){
-    const a=i<receiptsPre.length?receiptsPre[i]:0;
-    const b=i<receiptsLaunch.length?receiptsLaunch[i]:0;
-    const c=i<receiptsMonthly.length?receiptsMonthly[i]:0;
-    receipts[i]=a+b+c;
-  }
-
-  const investments=[],costs=[],net=[];
-  const flow=[];
-  for(let m=0;m<finalLen;m++){
-    const invest=m<months?totalConstruction/months:0;
-    const cost=0;
-    const netVal=receipts[m]-invest-cost;
-    flow.push({month:m+1,receita:receipts[m],invest:invest,net:netVal});
-    investments[m]=invest; costs[m]=cost; net[m]=netVal;
-  }
-
-  // acumulado
-  const cumFlow=[];
-  net.reduce((a,v,i)=>cumFlow[i]=a+v,a=0);
-
-  // indicadores
-  const irrMonthly=irr(net);
-  const roi=net.reduce((a,v)=>a+v,0)/totalConstruction;
-  const payback=net.findIndex(v=>v>0?net.slice(0,net.indexOf(v)+1).reduce((s,x)=>s+x,0)>=totalConstruction:false)+1||null;
-
-  return {VGV,totalConstruction,flow,cumFlow,irr:irrMonthly,roi,payback};
+  let unitsSold=0,monthIdx=p.pre_launch_sales+p.launch_sales;
+  while(unitsSold<p.units-(p.pre_launch_sales+p.launch_sales)){const unitsThisMonth=Math.min(p.monthly_sales,p.units-(p.pre_launch_sales+p.launch_sales)-unitsSold);distributeUnits(unitsThisMonth,monthIdx,receiptsMonthly);unitsSold+=unitsThisMonth;monthIdx++;if(monthIdx>1000) break;}
+  const finalLen=Math.max(receiptsPre.length,receiptsLaunch.length,receiptsMonthly.length,p.months);
+  const receipts=[],investments=[],costs=[];
+  for(let i=0;i<finalLen;i++){receipts[i]=(receiptsPre[i]||0)+(receiptsLaunch[i]||0)+(receiptsMonthly[i]||0);}
+  const incc=0.0045,den=(p.months*(p.months+1))/2;
+  for(let m=1;m<=finalLen;m++){investments[m-1]=m<=p.months?(totalConstruction*(m/den))*Math.pow(1+incc,m):0;}
+  for(let m=0;m<finalLen;m++){costs[m]=m<p.months?0.015*VGV/p.months+11000+((m===11)?0.01*VGV:0)+((m===0)?0.05*totalConstruction:0):0;}
+  const net=receipts.map((r,i)=>r-(investments[i]||0)-(costs[i]||0));
+  let cumul=0,payback='--';
+  for(let i=0;i<net.length;i++){cumul+=net[i];if(cumul>=0){payback=i+1;break;}}
+  const irrMonthly=irr(net),irrAnnual=isFinite(irrMonthly)?Math.pow(1+irrMonthly,12)-1:NaN;
+  const rate=Math.pow(1+0.12,1/12)-1,npvVal=net.reduce((s,v,i)=>s+v/Math.pow(1+rate,i),0);
+  const roi=totalConstruction===0?0:(net.reduce((s,v)=>s+v,0)/totalConstruction)*100;
+  const cumFlow=[];net.reduce((s,v,i)=>{cumFlow[i]=s+v;return cumFlow[i];},0);
+  const flow=[];for(let i=0;i<finalLen;i++)flow.push({month:'M'+(i+1),receita:receipts[i],invest:investments[i],net:net[i],cumul:cumFlow[i]});
+  return {VGV,roi:roi.toFixed(1),tir:(irrAnnual*100).toFixed(1),VLP:npvVal.toFixed(2),payback,flow};
 }
 
-// ===== Render =====
-function renderSidebar(){
+// ===== Renderização =====
+function renderProjects(){
   const list=document.getElementById('projectsList');
   list.innerHTML='';
   projects.forEach(p=>{
-    const card=document.createElement('div'); card.className='project-card';
-    card.innerHTML=`
-      <div class="info">
-        <input type="text" value="${p.name}" data-id="${p.id}" class="project-name">
-        <div class="small">${p.city}</div>
-        <div class="kpi">
-          <div class="item"><div class="small">VGV</div><div class="value">R$ ${computeProject(p).VGV.toLocaleString()}</div></div>
-          <div class="item"><div class="small">ROI</div><div class="value">${(computeProject(p).roi*100).toFixed(1)}%</div></div>
-        </div>
-      </div>`;
-    card.addEventListener('click',()=>selectProject(p.id));
+    const card=document.createElement('div');
+    card.className='project-card';
+    const info=document.createElement('div'); info.className='info';
+    const title=document.createElement('input'); title.type='text'; title.value=p.name;
+    title.addEventListener('input',e=>{p.name=e.target.value;renderPortfolioChart();});
+    info.appendChild(title);
+    const city=document.createElement('div'); city.className='small'; city.textContent=p.city; info.appendChild(city);
+    const kpis=document.createElement('div'); kpis.className='kpi';
+    const res=computeProject(p);
+    ['VGV','ROI','TIR','Payback'].forEach((k,idx)=>{
+      const it=document.createElement('div'); it.className='item';
+      const v=document.createElement('div'); v.className='value';
+      v.textContent=k==='VGV'?`R$ ${res.VGV.toLocaleString()}`:res[k.toLowerCase()];
+      it.innerHTML=`<div>${k}</div>`; it.appendChild(v); kpis.appendChild(it);
+    });
+    card.appendChild(info); card.appendChild(kpis);
+    card.addEventListener('click',()=>renderDetail(p));
     list.appendChild(card);
   });
 }
-
-function selectProject(id){
-  const p=projects.find(x=>x.id===id); if(!p) return;
-  selectedProject=p;
-  document.getElementById('panelTitle').innerText=p.name;
-
-  const comp=computeProject(p);
-  renderDetailTable(comp.flow,comp.cumFlow);
-  renderDetailChart(comp.flow);
-}
-
-function renderDetailTable(flow,cum){
-  let html='<div class="card"><strong>Fluxo Mensal</strong><table><tr><th>Mês</th><th>Receita</th><th>Investimento</th><th>Fluxo Líquido</th><th>Acumulado</th></tr>';
-  for(let i=0;i<flow.length;i++){
-    html+=`<tr>
-      <td>${flow[i].month}</td>
-      <td>R$ ${flow[i].receita.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-      <td>R$ ${flow[i].invest.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-      <td>R$ ${flow[i].net.toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-      <td>R$ ${cum[i].toLocaleString(undefined,{minimumFractionDigits:2})}</td>
-    </tr>`;
-  }
-  html+='</table></div>';
-  document.getElementById('detailArea').innerHTML=html;
-}
-
-// Charts
-let chartPortfolio=null,chartDetail=null;
-function renderCharts(){
+let portfolioChart;
+function renderPortfolioChart(){
+  const ctx=document.getElementById('chartPortfolio').getContext('2d');
   const labels=projects.map(p=>p.name);
   const data=projects.map(p=>computeProject(p).VGV);
-  if(chartPortfolio) chartPortfolio.destroy();
-  const ctx=document.getElementById('chartPortfolio').getContext('2d');
-  chartPortfolio=new Chart(ctx,{
-    type:'bar',
-    data:{labels, datasets:[{label:'VGV',data,backgroundColor:colors}]},
-    options:{responsive:true,plugins:{legend:{display:false}}}
-  });
+  document.getElementById('totalVgv').textContent='R$ '+data.reduce((a,b)=>a+b,0).toLocaleString();
+  if(portfolioChart) portfolioChart.destroy();
+  portfolioChart=new Chart(ctx,{type:'bar',data:{labels, datasets:[{label:'VGV',data,backgroundColor:colors}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
 }
-function renderDetailChart(flow){
-  const ctx=document.getElementById('chartDetail').getContext('2d');
-  const labels=flow.map(f=>f.month);
-  const dataReceita=flow.map(f=>f.receita);
-  const dataInvest=flow.map(f=>f.invest);
-  const dataNet=flow.map(f=>f.net);
-  const dataCum=[],sum=flow.map(f=>f.net).reduce((a,v,i)=>{dataCum[i]=(i>0?dataCum[i-1]:0)+v; return dataCum[i];},0);
-  if(chartDetail) chartDetail.destroy();
-  chartDetail=new Chart(ctx,{
-    type:'line',
-    data:{
-      labels,
-      datasets:[
-        {label:'Receita',data:dataReceita,borderColor:'#2196f3',backgroundColor:'#2196f3',tension:0.3},
-        {label:'Investimento',data:dataInvest,borderColor:'#f44336',backgroundColor:'#f44336',tension:0.3},
-        {label:'Fluxo Líquido',data:dataNet,borderColor:'#4caf50',backgroundColor:'#4caf50',tension:0.3},
-        {label:'Acumulado',data:dataCum,borderColor:'#c9a84b',backgroundColor:'#c9a84b',tension:0.3}
-      ]
-    },
-    options:{responsive:true,plugins:{legend:{position:'top'}}}
-  });
+function renderDetail(p){
+  const area=document.getElementById('detailArea');
+  area.innerHTML='';
+  const card=document.createElement('div'); card.className='card';
+  card.innerHTML=`<div class="section-title">${p.name}</div>`;
+  const res=computeProject(p);
+  const table=document.createElement('table');
+  const thead=document.createElement('thead');
+  thead.innerHTML='<tr><th>Mês</th><th>Receita</th><th>Investimento</th><th>Fluxo Líquido</th><th>Acumulado</th></tr>'; table.appendChild(thead);
+  const tbody=document.createElement('tbody');
+  res.flow.forEach(f=>{const tr=document.createElement('tr'); tr.innerHTML=`<td>${f.month}</td><td>R$ ${f.receita.toFixed(2)}</td><td>R$ ${f.invest.toFixed(2)}</td><td>R$ ${f.net.toFixed(2)}</td><td>R$ ${f.cumul.toFixed(2)}</td>`;tbody.appendChild(tr);});
+  table.appendChild(tbody); card.appendChild(table);
+  const canvas=document.createElement('canvas'); canvas.height=140; card.appendChild(canvas);
+  area.appendChild(card);
+  const ctx=canvas.getContext('2d');
+  new Chart(ctx,{type:'line',data:{labels:res.flow.map(f=>f.month),datasets:[{label:'Receita',data:res.flow.map(f=>f.receita),borderColor:'#4caf50',tension:0.3},{label:'Investimento',data:res.flow.map(f=>f.invest),borderColor:'#f44336',tension:0.3},{label:'Fluxo Líquido',data:res.flow.map(f=>f.net),borderColor:'#ffc107',tension:0.3}]},options:{plugins:{legend:{position:'top'}},scales:{y:{beginAtZero:true}}}});
 }
 
-// Login
+// ===== Login =====
 document.getElementById('btnLogin').addEventListener('click',()=>{
-  const val=document.getElementById('pwd').value;
-  if(val===PASSWORD){
-    document.getElementById('loginModal').style.display='none';
-    document.getElementById('app').style.display='flex';
-    loadCfg(); renderSidebar(); renderCharts();
-  } else alert('Senha incorreta!');
+  const v=document.getElementById('pwd').value;
+  if(v===PASSWORD){document.getElementById('loginModal').style.display='none';document.getElementById('app').style.display='flex';loadCfg();renderProjects();renderPortfolioChart();}
+  else alert('Senha incorreta');
 });
 
-// Eventos
-document.getElementById('btnNew').addEventListener('click',()=>{
-  const newId=Math.max(...projects.map(p=>p.id))+1;
-  projects.push({id:newId,name:"Novo Projeto",city:"Cidade",units:10,area:70,price_m2:5000,cost_m2:2500,months:24,pre_launch_sales:1,launch_sales:2,monthly_sales:2});
-  renderSidebar(); renderCharts();
+// ===== Eventos =====
+document.getElementById('btnNew').addEventListener('click',()=>{projects.push({id:Date.now(),name:"Novo Projeto",city:"Cidade",units:10,area:80,price_m2:5000,cost_m2:2500,months:24,pre_launch_sales:0,launch_sales:0,monthly_sales:1});renderProjects();renderPortfolioChart();});
+document.getElementById('btnPublish').addEventListener('click',()=>{saveCfg();renderProjects();renderPortfolioChart();alert('Alterações salvas localmente');});
+document.getElementById('btnDownloadCsv').addEventListener('click',()=>{
+  const rows=[['Projeto','Mês','Receita','Investimento','Fluxo Líquido','Acumulado']];
+  projects.forEach(p=>{const f=computeProject(p).flow; f.forEach(r=>rows.push([p.name,r.month,r.receita.toFixed(2),r.invest.toFixed(2),r.net.toFixed(2),r.cumul.toFixed(2)]));});
+  const csvContent='data:text/csv;charset=utf-8,'+rows.map(e=>e.join(',')).join('\n');
+  const encodedUri=encodeURI(csvContent); const link=document.createElement('a'); link.setAttribute('href',encodedUri); link.setAttribute('download','portfolio.csv'); document.body.appendChild(link); link.click(); document.body.removeChild(link);
 });
-document.getElementById('btnPublish').addEventListener('click',()=>{saveCfg();renderSidebar();renderCharts();alert('Alterações salvas localmente.');});
 document.getElementById('entradaPct').addEventListener('change',saveCfg);
 document.getElementById('entradaParc').addEventListener('change',saveCfg);
 document.getElementById('parcelasRestantes').addEventListener('change',saveCfg);
+document.getElementById('search').addEventListener('input',e=>{const v=e.target.value.toLowerCase();projects.forEach((p,i)=>{const card=document.getElementById('projectsList').children[i];card.style.display=p.name.toLowerCase().includes(v)?'flex':'none';})});
 </script>
 
 </body>
