@@ -7,14 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-:root{
-  --bg:#070707;
-  --panel:#0f0f0f;
-  --muted:#9e9e9e;
-  --gold:#c9a84b;
-  --card:#121212;
-  --accent:#e6e6e6;
-}
+:root{--bg:#070707;--panel:#0f0f0f;--muted:#9e9e9e;--gold:#c9a84b;--card:#121212;--accent:#e6e6e6}
 *{box-sizing:border-box;font-family:Inter,system-ui,Arial;color:var(--accent)}
 html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a);-webkit-font-smoothing:antialiased}
 .header{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.04)}
@@ -31,29 +24,18 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
 .kpi .item{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:8px;border-radius:8px;min-width:90px;text-align:center}
 .kpi .value{font-weight:700;color:var(--gold);margin-top:6px}
 .controls label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
-.controls input[type=text],
-.controls input[type=number],
-.project-card input[type=text],
-.project-card input[type=number]{
-    background-color: #1e1e1e;
-    color: #fff;
-    border: 1px solid #c9a84b;
-    padding: 6px 8px;
-    border-radius: 6px;
-    width: 100%;
-    margin-bottom:6px;
-}
-.project-card input[type=text]:focus,
-.project-card input[type=number]:focus{
-    outline:2px solid #c9a84b;
-    background-color:#292929;
-}
+.controls input[type=text],.controls input[type=number],.project-card input[type=text],.project-card input[type=number]{background-color:#1e1e1e;color:#fff;border:1px solid #c9a84b;padding:6px 8px;border-radius:6px;width:100%;margin-bottom:6px}
+.project-card input[type=text]:focus,.project-card input[type=number]:focus{outline:2px solid #c9a84b;background-color:#292929}
 .button{background:var(--gold);color:#0b0b0b;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:700}
 .button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--accent)}
 .card{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:12px;border-radius:10px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.02)}
 .tooltip{position:relative;display:inline-block}
-.tooltip .tt{visibility:hidden;width:260px;background:#0c0c0c;color:var(--muted);text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:10;bottom:130%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .12s}
+.tooltip .tt{visibility:hidden;width:320px;background:#0c0c0c;color:var(--muted);text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:10;bottom:130%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .12s}
 .tooltip:hover .tt{visibility:visible;opacity:1}
+.table-scroll{overflow:auto;max-height:420px;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,0.03)}
+th{background:#0f0f0f;position:sticky;top:0;color:var(--gold);}
 @media(max-width:980px){.container{flex-direction:column}.sidebar{width:auto}}
 </style>
 </head>
@@ -99,16 +81,12 @@ html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a
         <input id="discountPre" type="number" min="0" max="100" step="0.1" value="10">
         <label>Desconto Lançamento (%)</label>
         <input id="discountLaunch" type="number" min="0" max="100" step="0.1" value="5">
-
         <label>Entrada (%)</label>
-        <input id="entradaPct" type="number" min="0" max="100" step="0.1" value="30">
-
-        <label>Parcelas da entrada (nº)</label>
-        <input id="entradaMonths" type="number" min="1" step="1" value="6">
-
+        <input id="entradaPct" type="number" min="0" max="100" step="1" value="30">
+        <label>Parcelas da Entrada</label>
+        <input id="entradaParc" type="number" min="1" step="1" value="6">
         <label>Parcelas do saldo (nº)</label>
         <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
-
         <div class="small" style="margin-top:6px">A entrada é paga em X parcelas a partir do mês da venda; o restante (saldo) é pago em Y parcelas subsequentes.</div>
 
         <div style="display:flex;gap:8px;margin-top:10px">
@@ -190,7 +168,7 @@ const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 
 // ===== Persistência das configurações de venda =====
 const cfgKey = 'aps_sale_cfg';
-let saleCfg = { discountPre:10, discountLaunch:5, parcelasRestantes:24, entradaPct:30, entradaMonths:6 };
+let saleCfg = { discountPre:10, discountLaunch:5, parcelasRestantes:24, entradaPct:30, entradaParc:6 };
 
 function loadCfg(){
   const s = localStorage.getItem(cfgKey);
@@ -199,20 +177,19 @@ function loadCfg(){
   document.getElementById('discountLaunch').value = saleCfg.discountLaunch;
   document.getElementById('parcelasRestantes').value = saleCfg.parcelasRestantes;
   document.getElementById('entradaPct').value = saleCfg.entradaPct;
-  document.getElementById('entradaMonths').value = saleCfg.entradaMonths;
+  document.getElementById('entradaParc').value = saleCfg.entradaParc;
 }
 function saveCfg(){
   saleCfg.discountPre = Number(document.getElementById('discountPre').value) || 0;
   saleCfg.discountLaunch = Number(document.getElementById('discountLaunch').value) || 0;
   saleCfg.parcelasRestantes = Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes').value) || 24));
   saleCfg.entradaPct = Math.min(100, Math.max(0, Number(document.getElementById('entradaPct').value) || 30));
-  saleCfg.entradaMonths = Math.max(1, Math.floor(Number(document.getElementById('entradaMonths').value) || 6));
+  saleCfg.entradaParc = Math.max(1, Math.floor(Number(document.getElementById('entradaParc').value) || 6));
   localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
   renderSidebar();
 }
 
-// ===== Funções financeiras =====
-function irr(values, guess = 0.01) {
+// ===== Funções financeiras =====nfunction irr(values, guess = 0.01) {
   const eps = 1e-7;
   const maxIter = 1000;
   let rate = guess;
@@ -238,77 +215,64 @@ function irr(values, guess = 0.01) {
 
 // ===== Novo cálculo de distribuição de vendas com desconto e parcelamento =====
 function computeProject(p) {
-  // carregar cfg atual
   const cfg = saleCfg;
-
   const months = p.months;
   const price_unit_full = p.area * p.price_m2;
   const VGV = p.units * price_unit_full;
   const totalConstruction = p.units * p.area * p.cost_m2;
 
-  // vamos construir arrays dinâmicos de recebimentos (podem ultrapassar 'months')
-  const receiptsPre = [];   // por mês
+  const receiptsPre = [];
   const receiptsLaunch = [];
   const receiptsMonthly = [];
   const investments = [];
   const costs = [];
+  const marketing = [];
+  const broker = [];
 
-  // helper: ensure length
-  function ensureLen(arr, len){
-    while(arr.length < len) arr.push(0);
-  }
+  function ensureLen(arr, len){ while(arr.length < len) arr.push(0); }
 
-  // função que adiciona parcelas para uma unidade vendida num determinado mês
-  // params: saleMonth (0-index), price_unit (já com desconto quando aplicável), targetArray (receiptsX)
   function addSalePayments(saleMonth, price_unit, targetArray) {
-    // entrada configurável (percentual e nº parcelas)
     const entradaPct = (cfg.entradaPct || 30) / 100;
-    const entradaMonths = cfg.entradaMonths || 6;
-
+    const entradaMonths = cfg.entradaParc || 6;
     const entradaTotal = price_unit * entradaPct;
     const entradaParcel = entradaTotal / entradaMonths;
-
-    // restante do saldo
     const restantePct = 1 - entradaPct;
     const restanteTotal = price_unit * restantePct;
     const restParc = cfg.parcelasRestantes || 24;
 
-    // distribuir parcelas da entrada
+    // distribuir entrada
     for (let m = 0; m < entradaMonths; m++) {
       const idx = saleMonth + m;
       ensureLen(targetArray, idx+1);
       targetArray[idx] += entradaParcel;
     }
 
-    // distribuir parcelas do saldo a partir de saleMonth + entradaMonths
+    // distribuir saldo
     for (let m = 0; m < restParc; m++) {
       const idx = saleMonth + entradaMonths + m;
       ensureLen(targetArray, idx+1);
       targetArray[idx] += restanteTotal / restParc;
     }
+
+    // comissão (5% do preço unitário) paga no mês da venda
+    const commission = 0.05 * price_unit;
+    ensureLen(broker, saleMonth+1);
+    broker[saleMonth] += commission;
   }
 
-  // distribuir vendas conforme tipo (pré, lançamento, mensais)
-  // função genérica para distribuir N unidades começando em startMonth,
-  // iterando unidade a unidade (cada unidade "vende" em mês subsequente)
   function distributeUnits(units, startMonth, receiptsArr, type) {
     for (let u = 0; u < units; u++) {
       const saleMonth = startMonth + u;
-      // preço unitário com desconto aplicável
       let price_unit = price_unit_full;
       if (type === 'pre' && cfg.discountPre) price_unit = price_unit_full * (1 - cfg.discountPre/100);
       if (type === 'launch' && cfg.discountLaunch) price_unit = price_unit_full * (1 - cfg.discountLaunch/100);
-      // monthly sales (pós-lançamento) não recebem desconto aqui
       addSalePayments(saleMonth, price_unit, receiptsArr);
     }
   }
 
-  // distribuir pré-lançamento (começa mês 0)
   distributeUnits(p.pre_launch_sales, 0, receiptsPre, 'pre');
-  // distribuir lançamento (começa após pré-lançamento)
   distributeUnits(p.launch_sales, p.pre_launch_sales, receiptsLaunch, 'launch');
 
-  // vendas mensais após lançamento:
   let unitsSoldMonthly = 0;
   let monthIdx = p.pre_launch_sales + p.launch_sales;
   while (unitsSoldMonthly < p.units - (p.pre_launch_sales + p.launch_sales)) {
@@ -316,14 +280,12 @@ function computeProject(p) {
     distributeUnits(unitsThisMonth, monthIdx, receiptsMonthly, 'monthly');
     unitsSoldMonthly += unitsThisMonth;
     monthIdx++;
-    // safety to avoid infinite loop
     if (monthIdx > 1000) break;
   }
 
-  // agora unimos arrays e definimos o tamanho final (o maior índice existente)
-  const finalLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, months);
+  const finalLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, months, broker.length);
 
-  // ===== Investimentos mensais (mantém o modelo anterior até 'months') =====
+  // investimentos
   const incc = 0.0045;
   const den = (months * (months + 1)) / 2;
   for (let m = 1; m <= finalLen; m++) {
@@ -332,26 +294,29 @@ function computeProject(p) {
       const base = totalConstruction * prop;
       investments[m - 1] = base * Math.pow(1 + incc, m);
     } else {
-      investments[m - 1] = 0; // sem investimentos após conclusão
+      investments[m - 1] = 0;
     }
   }
 
-  // ===== Custos mensais (mantemos custos até months; após isso zero) =====
+  // custos e marketing por mês
   for (let m = 0; m < finalLen; m++) {
     if (m < months) {
       costs[m] = 0;
       const marketingTotal = 0.015 * VGV;
       const marketingMonthly = marketingTotal / months;
-      costs[m] += marketingMonthly;        // marketing proporcional
-      costs[m] += 8000 + 3000;             // custos fixos
+      marketing[m] = marketingMonthly;
+      costs[m] += marketingMonthly;
+      costs[m] += 8000 + 3000; // custos fixos
       if (m === 11) costs[m] += 0.01 * VGV; // custo anual adicional
       if (m === 0) costs[m] += 0.05 * totalConstruction; // entrada de construção
     } else {
       costs[m] = 0;
+      marketing[m] = 0;
     }
+    if (typeof broker[m] === 'undefined') broker[m] = 0;
   }
 
-  // preencher arrays de receipts combinados por mês
+  // receipts combined
   const receipts = [];
   for (let i = 0; i < finalLen; i++) {
     const a = i < receiptsPre.length ? receiptsPre[i] : 0;
@@ -360,16 +325,14 @@ function computeProject(p) {
     receipts[i] = a + b + c;
   }
 
-  // ===== Fluxo líquido =====
-  const net = receipts.map((r, i) => r - (investments[i] || 0) - (costs[i] || 0));
+  // fluxo líquido
+  const net = receipts.map((r, i) => r - (investments[i] || 0) - (costs[i] || 0) - (broker[i] || 0));
 
-  // ===== Indicadores financeiros =====
   const irrMonthly = irr(net);
   const irrAnnual = isFinite(irrMonthly) ? Math.pow(1 + irrMonthly, 12) - 1 : NaN;
   const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
   const npvVal = net.reduce((s, v, i) => s + v / Math.pow(1 + rate, i), 0);
 
-  // Payback (em meses desde o início do fluxo)
   let cumul = 0;
   let payback = '--';
   for (let i = 0; i < net.length; i++) {
@@ -381,27 +344,13 @@ function computeProject(p) {
   const totalInvestment = investments.reduce((s, v) => s + v, 0);
   const roi = totalInvestment === 0 ? 0 : (totalNet / totalInvestment) * 100;
 
-  // totals for display
-  const marketingTotal = 0.015 * VGV;
-  const brokerTotal = 0.05 * VGV;
+  const marketingTotal = marketing.reduce((s,v)=>s+v,0);
+  const brokerTotal = broker.reduce((s,v)=>s+v,0);
 
   return {
-    receiptsPre,
-    receiptsLaunch,
-    receiptsMonthly,
-    receipts,
-    investments,
-    costs,
-    net,
-    irrMonthly,
-    irrAnnual,
-    npvVal,
-    payback,
-    roi,
-    VGV,
-    totalConstruction,
-    marketingTotal,
-    brokerTotal
+    receiptsPre, receiptsLaunch, receiptsMonthly, receipts,
+    investments, costs, marketing, broker, net,
+    irrMonthly, irrAnnual, npvVal, payback, roi, VGV, totalConstruction, marketingTotal, brokerTotal
   };
 }
 
@@ -414,7 +363,6 @@ function renderSidebar(){
     const d=computeProject(p);
     const div=document.createElement('div'); div.className='project-card';
     const info=document.createElement('div'); info.className='info';
-    
     info.innerHTML = `
   <label><strong>Nome</strong></label>
   <input type="text" value="${p.name}" data-field="name">
@@ -444,7 +392,6 @@ function renderSidebar(){
         renderSidebar(); if(document.getElementById('detailArea').children.length) selectProject(p.id);
       });
     });
-
     div.appendChild(info); div.addEventListener('click',()=>selectProject(p.id));
     el.appendChild(div);
   });
@@ -469,6 +416,22 @@ function selectProject(id) {
   const d = computeProject(p);
   const area = document.getElementById('detailArea');
 
+  let acumulado = 0;
+  const tabelaLinhas = d.net.map((v, i) => {
+    acumulado += v;
+    return `
+      <tr>
+        <td>M${i + 1}</td>
+        <td>${(d.investments[i] || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>${(d.marketing[i] || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>${(d.broker[i] || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>${(d.receipts[i] || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>${v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+        <td>${acumulado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</td>
+      </tr>
+    `;
+  }).join('');
+
   area.innerHTML = `
     <div class="card">
       <div style="display:flex;justify-content:space-between">
@@ -483,24 +446,24 @@ function selectProject(id) {
 
       <div style="display:flex;gap:12px;margin-top:12px">
         <div style="flex:1">
-          <canvas id="chartCash${id}" height="140"></canvas>
+          <canvas id="chartCash${id}" height="150"></canvas>
         </div>
 
         <div style="width:320px">
           <div class="card">
-            <div class="small">Resumo</div>
+            <div class="small">Indicadores</div>
             <div style="margin-top:8px">
-              <strong>ROI:</strong> ${isFinite(d.roi) ? d.roi.toFixed(1)+'%' : '--'}<br>
-              <strong>TIR (a.a.):</strong> ${isFinite(d.irrAnnual) ? (d.irrAnnual*100).toFixed(1)+'%' : '--'}<br>
+              <strong>ROI:</strong> ${(isFinite(d.roi) ? d.roi.toFixed(1) : '--')}%<br>
+              <strong>TIR (a.a.):</strong> ${(isFinite(d.irrAnnual) ? (d.irrAnnual*100).toFixed(1) : '--')}%<br>
               <strong>VPL (12% a.a.):</strong> ${d.npvVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}<br>
               <strong>Payback:</strong> ${d.payback} meses
             </div>
           </div>
 
           <div class="card" style="margin-top:12px">
-            <div class="small">Custos</div>
+            <div class="small">Custos Totais</div>
             <div style="margin-top:8px">
-              Custo construção: ${d.totalConstruction.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}<br>
+              Construção: ${d.totalConstruction.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}<br>
               Marketing: ${d.marketingTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}<br>
               Comissão: ${d.brokerTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}
             </div>
@@ -508,16 +471,33 @@ function selectProject(id) {
         </div>
       </div>
 
-      <div style="margin-top:12px" class="small">
-        Passe o mouse sobre os pontos do gráfico para ver valores mensais. (Receitas já consideram desconto e parcelamento configurados)
+      <div style="margin-top:20px">
+        <h4 style="color:var(--gold);margin-bottom:8px">Tabela de Fluxo de Caixa Detalhada</h4>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Mês</th>
+                <th>Investimento</th>
+                <th>Marketing</th>
+                <th>Comissão</th>
+                <th>Receita</th>
+                <th>Fluxo Líquido</th>
+                <th>Acumulado</th>
+              </tr>
+            </thead>
+            <tbody>${tabelaLinhas}</tbody>
+          </table>
+        </div>
+      </div>
+
+      <div style="margin-top:10px" class="small">
+        💡 <em>Os valores mensais consideram descontos, parcelamentos e percentuais configurados. Passe o mouse sobre o gráfico para visualizar o detalhamento mensal.</em>
       </div>
     </div>
   `;
 
-  // ===== Chart.js atualizado =====
   const ctx = document.getElementById('chartCash'+id).getContext('2d');
-
-  // garantir rótulos até o tamanho do fluxo
   const labels = Array.from({length: d.net.length}, (_, i) => 'M' + (i+1));
 
   new Chart(ctx, {
@@ -525,63 +505,34 @@ function selectProject(id) {
     data: {
       labels,
       datasets: [
-        {
-          label: 'Pré-lançamento',
-          data: d.receiptsPre,
-          borderColor: '#ff9800',
-          backgroundColor: 'rgba(255,152,0,0.2)',
-          fill: true,
-          tension: 0.3,
-        },
-        {
-          label: 'Lançamento',
-          data: d.receiptsLaunch,
-          borderColor: '#4caf50',
-          backgroundColor: 'rgba(76,175,80,0.2)',
-          fill: true,
-          tension: 0.3,
-        },
-        {
-          label: 'Vendas Mensais',
-          data: d.receiptsMonthly,
-          borderColor: '#2196f3',
-          backgroundColor: 'rgba(33,150,243,0.2)',
-          fill: true,
-          tension: 0.3,
-        },
-        {
-          label: 'Fluxo Líquido',
-          data: d.net,
-          borderColor: '#c9a84b',
-          backgroundColor: 'rgba(201,168,75,0.08)',
-          fill: true,
-          tension: 0.3,
-        }
+        { label: 'Receitas', data: d.receipts, borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.2)', fill: true, tension: 0.3 },
+        { label: 'Investimentos', data: d.investments.map(v=>-v), borderColor: '#f44336', backgroundColor: 'rgba(244,67,54,0.2)', fill: true, tension: 0.3 },
+        { label: 'Marketing', data: d.marketing.map(v=>-v), borderColor: '#ff9800', backgroundColor: 'rgba(255,152,0,0.15)', fill: true, tension: 0.3 },
+        { label: 'Comissão', data: d.broker.map(v=>-v), borderColor: '#9c27b0', backgroundColor: 'rgba(156,39,176,0.15)', fill: true, tension: 0.3 },
+        { label: 'Fluxo Líquido', data: d.net, borderColor: '#c9a84b', backgroundColor: 'rgba(201,168,75,0.08)', fill: true, tension: 0.3 }
       ]
     },
     options: {
       plugins: {
         legend: { labels: { color: '#fff' } },
-        tooltip: { mode: 'index', intersect: false, callbacks: {
-          label: function(context){
-            const v = context.raw || 0;
-            return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            label: ctx => ctx.dataset.label + ': ' + (ctx.raw || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
           }
-        } }
+        }
       },
       interaction: { mode: 'nearest', axis: 'x', intersect: false },
-      scales: {
-        x: { ticks: { color: '#fff' } },
-        y: { ticks: { color: '#fff' } }
-      }
+      scales: { x: { ticks: { color: '#fff' } }, y: { ticks: { color: '#fff' } } }
     }
   });
 }
 
 // ===== Persistência e Eventos =====
 function saveAll(){ localStorage.setItem('aps_projects',JSON.stringify(projects)); saveCfg(); alert('Alterações salvas no navegador (localStorage).'); }
-function exportJson(){const blob=new Blob([JSON.stringify(projects,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.json';a.click();URL.revokeObjectURL(url);}
-function downloadCsv(){const rows=['id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales'];projects.forEach(p=>rows.push([p.id,p.name,p.city,p.units,p.area,p.price_m2,p.cost_m2,p.months,p.pre_launch_sales,p.launch_sales,p.monthly_sales].join(',')));const blob=new Blob([rows.join('\n')],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.csv';a.click();URL.revokeObjectURL(url);}
+function exportJson(){const blob=new Blob([JSON.stringify(projects,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.json';a.click();URL.revokeObjectURL(url);}nfunction downloadCsv(){const rows=['id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales'];projects.forEach(p=>rows.push([p.id,p.name,p.city,p.units,p.area,p.price_m2,p.cost_m2,p.months,p.pre_launch_sales,p.launch_sales,p.monthly_sales].join(',')));const blob=new Blob([rows.join('
+')],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.csv';a.click();URL.revokeObjectURL(url);
 
 document.getElementById('btnLogin').addEventListener('click',()=>{
   const v=document.getElementById('pwd').value;
@@ -601,11 +552,7 @@ document.getElementById('btnNew').addEventListener('click',()=>{const id=project
 document.getElementById('btnDownloadCsv').addEventListener('click',downloadCsv);
 
 // salvar cfg ao alterar inputs
-document.getElementById('discountPre').addEventListener('change',saveCfg);
-document.getElementById('discountLaunch').addEventListener('change',saveCfg);
-document.getElementById('parcelasRestantes').addEventListener('change',saveCfg);
-document.getElementById('entradaPct').addEventListener('change',saveCfg);
-document.getElementById('entradaMonths').addEventListener('change',saveCfg);
+['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaParc'].forEach(id=>document.getElementById(id).addEventListener('change',saveCfg));
 
 window.addEventListener('load',()=>{
   const saved=localStorage.getItem('aps_projects');
