@@ -3,9 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>APSPARCEIROS Invest — Dashboard Premium</title>
+<title>APSPARCEIROS Invest — Dashboard Premium (Tela Cheia)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <style>
 :root{
   --bg:#070707;
@@ -15,83 +16,143 @@
   --card:#121212;
   --accent:#e6e6e6;
 }
-*{box-sizing:border-box;font-family:Inter,system-ui,Arial;color:var(--accent)}
+
+/* ===== Ajustes gerais ===== */
+*{box-sizing:border-box;font-family:Inter,system-ui,Arial;color:var(--accent);margin:0;padding:0}
 html,body{
   height:100%;
-  margin:0;
+  width:100%;
+  overflow:hidden; /* remove barras de rolagem */
   background:linear-gradient(180deg,#040404,#0a0a0a);
   -webkit-font-smoothing:antialiased;
-  font-size:16px;
+  font-size:17px;
   transform-origin: top left;
-  transform: scale(1.05); /* aumenta o dashboard */
+  transform: scale(1.05);
 }
-.header{display:flex;justify-content:space-between;align-items:center;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,0.04)}
-.brand{font-weight:800;color:var(--gold);letter-spacing:0.6px}
-.header .meta{color:var(--muted);font-size:13px}
 
-/* ===== Dashboard layout maior ===== */
+/* ===== Cabeçalho ===== */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px 28px;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.brand{font-weight:800;color:var(--gold);letter-spacing:0.6px;font-size:20px}
+.header .meta{color:var(--muted);font-size:14px}
+
+/* ===== Container full screen ===== */
 .container{
   display:flex;
-  height:calc(100vh - 60px);
-  gap:24px;
-  padding:24px;
+  height:calc(100vh - 72px);
+  width:100%;
+  gap:28px;
+  padding:28px;
+  overflow:hidden;
 }
 .sidebar{
-  width:300px;
+  width:22%;
+  min-width:300px;
   background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));
   border-radius:12px;
-  padding:14px;
-  overflow:auto;
+  padding:18px;
+  overflow-y:auto;
+  scrollbar-width:thin;
 }
 .content{
   flex:1;
   background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));
   border-radius:12px;
-  padding:18px;
-  overflow:auto;
+  padding:22px;
+  overflow-y:auto;
+  scrollbar-width:thin;
 }
-.section-title{font-weight:700;color:var(--gold);margin-bottom:8px}
-.project-card{background:var(--card);padding:12px;border-radius:10px;margin-bottom:12px;display:flex;gap:12px;align-items:flex-start;border:1px solid rgba(255,255,255,0.03);cursor:pointer;flex-direction:column}
+.section-title{font-weight:700;color:var(--gold);margin-bottom:10px}
+.small{font-size:13px;color:var(--muted)}
+
+/* ===== Cartões e inputs ===== */
+.project-card{
+  background:var(--card);
+  padding:14px;
+  border-radius:10px;
+  margin-bottom:14px;
+  display:flex;
+  gap:12px;
+  flex-direction:column;
+  border:1px solid rgba(255,255,255,0.03);
+  cursor:pointer;
+}
 .project-card .info{flex:1;width:100%}
-.small{font-size:12px;color:var(--muted)}
-.kpi{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
-.kpi .item{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:8px;border-radius:8px;min-width:90px;text-align:center}
+.kpi{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.kpi .item{
+  background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));
+  padding:10px;
+  border-radius:8px;
+  min-width:90px;
+  text-align:center
+}
 .kpi .value{font-weight:700;color:var(--gold);margin-top:6px}
 
-/* ===== inputs ===== */
 .controls label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
 .controls input[type=text],
 .controls input[type=number],
 .project-card input[type=text],
 .project-card input[type=number]{
-    background-color: #1e1e1e;
-    color: #fff;
-    border: 1px solid #c9a84b;
-    padding: 6px 8px;
-    border-radius: 6px;
-    width: 100%;
+    background-color:#1e1e1e;
+    color:#fff;
+    border:1px solid #c9a84b;
+    padding:8px;
+    border-radius:6px;
+    width:100%;
     margin-bottom:6px;
 }
-.project-card input[type=text]:focus,
-.project-card input[type=number]:focus{
-    outline:2px solid #c9a84b;
-    background-color:#292929;
+.project-card input:focus{outline:2px solid #c9a84b;background-color:#292929}
+
+.button{
+  background:var(--gold);
+  color:#0b0b0b;
+  border:none;
+  padding:10px 14px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:700;
+}
+.button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent)}
+
+.card{
+  background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));
+  padding:14px;
+  border-radius:10px;
+  margin-bottom:14px;
+  border:1px solid rgba(255,255,255,0.03)
 }
 
-.button{background:var(--gold);color:#0b0b0b;border:none;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:700}
-.button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--accent)}
-.card{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:12px;border-radius:10px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.02)}
+/* ===== Tooltip ===== */
 .tooltip{position:relative;display:inline-block}
-.tooltip .tt{visibility:hidden;width:260px;background:#0c0c0c;color:var(--muted);text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:10;bottom:130%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .12s}
+.tooltip .tt{
+  visibility:hidden;
+  width:260px;
+  background:#0c0c0c;
+  color:var(--muted);
+  text-align:left;
+  border-radius:6px;
+  padding:10px;
+  position:absolute;
+  z-index:10;
+  bottom:130%;
+  left:50%;
+  transform:translateX(-50%);
+  opacity:0;
+  transition:opacity .12s;
+}
 .tooltip:hover .tt{visibility:visible;opacity:1}
-@media(max-width:980px){.container{flex-direction:column}.sidebar{width:auto}}
 
 /* ===== Gráficos maiores ===== */
 #chartPortfolio, #chartFluxo, #chartReceitas, #chartCustos {
-  min-height: 300px;
+  min-height:360px;
 }
 
-/* ===== Modal mantido ===== */
+/* ===== Modal de detalhes ===== */
 #detailModal {
   position: fixed;
   inset: 0;
@@ -102,36 +163,44 @@ html,body{
   z-index: 200;
 }
 .modal-inner {
-  width: 92%;
-  max-width: 1100px;
+  width: 94%;
+  max-width: 1200px;
   max-height: 92vh;
   background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
-  border-radius: 12px;
-  padding: 14px;
-  border:1px solid rgba(255,255,255,0.04);
+  border-radius: 14px;
+  padding: 20px;
+  border:1px solid rgba(255,255,255,0.05);
   overflow:auto;
   position: relative;
 }
 .modal-close {
   position: absolute;
-  right: 12px;
-  top: 12px;
+  right: 16px;
+  top: 14px;
   background: transparent;
   border: none;
   color: var(--gold);
-  font-size: 20px;
+  font-size: 22px;
   cursor: pointer;
 }
-.modal-header { display:flex;justify-content:space-between;align-items:center;margin-bottom:8px }
-.modal-tabs { display:flex; gap:8px; margin-bottom:12px; }
+.modal-tabs { display:flex; gap:10px; margin-bottom:14px; }
 .tab-btn {
-  background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px;color:var(--accent);cursor:pointer;
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.04);
+  padding:8px 14px;
+  border-radius:8px;
+  color:var(--accent);
+  cursor:pointer;
 }
 .tab-btn.active { background:var(--gold); color:#0b0b0b; border-color:var(--gold) }
-.modal-charts { display:flex; gap:12px; flex-direction:column }
-.canvas-wrap { background:transparent; border-radius:8px; padding:8px; border:1px solid rgba(255,255,255,0.02) }
-.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px; margin-top:12px }
-.stat { background:var(--card); padding:10px; border-radius:8px; border:1px solid rgba(255,255,255,0.02) }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:12px }
+.stat { background:var(--card); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.02) }
+
+@media(max-width:1100px){
+  html,body{transform:scale(1);overflow:auto}
+  .container{flex-direction:column;padding:18px;gap:18px;height:auto}
+  .sidebar{width:auto;min-width:unset}
+}
 </style>
 </head>
 <body>
