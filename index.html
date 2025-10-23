@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>APSPARCEIROS Invest — Dashboard Premium (Tela Cheia)</title>
+<title>APSPARCEIROS Invest — Dashboard Premium</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
@@ -21,7 +21,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:linear-gradient(180d
 .header{display:flex;justify-content:space-between;align-items:center;padding:20px 28px;border-bottom:1px solid rgba(255,255,255,0.04);}
 .brand{font-weight:800;color:var(--gold);letter-spacing:0.6px;font-size:20px}
 .header .meta{color:var(--muted);font-size:14px}
-.container{display:flex;height:calc(100vh - 72px);width:100%;gap:28px;padding:28px;overflow:hidden;}
+.container{display:flex;height:calc(100vh - 72px);width:100%;gap:28px;padding:28px;overflow:hidden}
 .sidebar{width:22%;min-width:300px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:18px;overflow-y:auto;scrollbar-width:thin;}
 .content{flex:1;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));border-radius:12px;padding:22px;overflow-y:auto;scrollbar-width:thin;}
 .section-title{font-weight:700;color:var(--gold);margin-bottom:10px}
@@ -32,7 +32,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:linear-gradient(180d
 .kpi .item{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:10px;border-radius:8px;min-width:90px;text-align:center}
 .kpi .value{font-weight:700;color:var(--gold);margin-top:6px}
 .controls label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
-.controls input[type=text],.controls input[type=number],.project-card input[type=text],.project-card input[type=number]{background-color:#1e1e1e;color:#fff;border:1px solid #c9a84b;padding:8px;border-radius:6px;width:100%;margin-bottom:6px;}
+.controls input[type=text], .controls input[type=number], .project-card input[type=text], .project-card input[type=number]{background-color:#1e1e1e;color:#fff;border:1px solid #c9a84b;padding:8px;border-radius:6px;width:100%;margin-bottom:6px;}
 .project-card input:focus{outline:2px solid #c9a84b;background-color:#292929}
 .button{background:var(--gold);color:#0b0b0b;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700;}
 .button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent)}
@@ -41,14 +41,14 @@ html,body{height:100%;width:100%;overflow:hidden;background:linear-gradient(180d
 .tooltip .tt{visibility:hidden;width:260px;background:#0c0c0c;color:var(--muted);text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:10;bottom:130%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .12s;}
 .tooltip:hover .tt{visibility:visible;opacity:1}
 #chartPortfolio, #chartFluxo, #chartReceitas, #chartCustos {min-height:360px;}
-#detailModal{position: fixed;inset: 0;background: rgba(0,0,0,0.9);display: none;align-items: center;justify-content: center;z-index: 200;}
-.modal-inner{width: 94%;max-width: 1200px;max-height: 92vh;background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border-radius: 14px;padding: 20px;border:1px solid rgba(255,255,255,0.05);overflow:auto;position: relative;}
-.modal-close{position: absolute;right: 16px;top: 14px;background: transparent;border: none;color: var(--gold);font-size: 22px;cursor: pointer;}
-.modal-tabs{display:flex; gap:10px; margin-bottom:14px;}
-.tab-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 14px;border-radius:8px;color:var(--accent);cursor:pointer;}
-.tab-btn.active{background:var(--gold); color:#0b0b0b; border-color:var(--gold)}
-.stats-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:12px}
-.stat{background:var(--card); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.02)}
+#detailModal {position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 200;}
+.modal-inner {width: 94%; max-width: 1200px; max-height: 92vh; background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00)); border-radius: 14px; padding: 20px; border:1px solid rgba(255,255,255,0.05); overflow:auto; position: relative;}
+.modal-close {position: absolute; right: 16px; top: 14px; background: transparent; border: none; color: var(--gold); font-size: 22px; cursor: pointer;}
+.modal-tabs { display:flex; gap:10px; margin-bottom:14px; }
+.tab-btn { background:transparent; border:1px solid rgba(255,255,255,0.04); padding:8px 14px; border-radius:8px; color:var(--accent); cursor:pointer;}
+.tab-btn.active { background:var(--gold); color:#0b0b0b; border-color:var(--gold) }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:12px }
+.stat { background:var(--card); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.02) }
 @media(max-width:1100px){html,body{transform:scale(1);overflow:auto}.container{flex-direction:column;padding:18px;gap:18px;height:auto}.sidebar{width:auto;min-width:unset}}
 </style>
 </head>
@@ -61,7 +61,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:linear-gradient(180d
 
 <!-- Login Modal -->
 <div id="loginModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:50">
-  <div id="loginBox" style="background:#0b0b0b;padding:28px;border-radius:12px;width:420px;border:1px solid rgba(255,255,255,0.05);box-shadow:0 0 15px rgba(201,168,75,0.4);transition:all 0.3s ease">
+  <div style="background:#0b0b0b;padding:28px;border-radius:12px;width:420px;border:1px solid rgba(255,255,255,0.05);box-shadow:0 0 15px rgba(201,168,75,0.4);transition:all 0.3s ease" id="loginBox">
     <h2 style="margin-top:0;color:var(--gold);text-align:center">Acesso Premium</h2>
     <p class="small" style="margin-bottom:16px;text-align:center;color:var(--muted)">Digite a senha para desbloquear o painel completo</p>
     <input id="pwd" type="password" placeholder="Senha" style="width:100%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--accent);transition:border 0.2s, box-shadow 0.2s">
@@ -72,7 +72,9 @@ html,body{height:100%;width:100%;overflow:hidden;background:linear-gradient(180d
       Esqueceu a senha? 
       <a href="https://wa.me/5512997036301?text=Olá!%20Preciso%20de%20ajuda%20para%20acessar%20o%20painel%20APSPARCEIROS%20Invest."
          target="_blank" 
-         style="color:var(--gold);text-decoration:none;font-weight:700">Entre em contato!</a>
+         style="color:var(--gold);text-decoration:none;font-weight:700">
+        Entre em contato!
+      </a>
     </p>
   </div>
 </div>
@@ -81,28 +83,16 @@ html,body{height:100%;width:100%;overflow:hidden;background:linear-gradient(180d
   <aside class="sidebar">
     <div class="section-title">Portfólio</div>
     <div id="projectsList"></div>
-
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div><strong>Filtrar</strong><div class="small">por indicador</div></div>
-        <div><button id="btnNew" class="button">+ Novo</button></div>
+        <button class="button ghost" onclick="updateDashboard()">Atualizar</button>
       </div>
-      <div class="controls" style="margin-top:10px">
-        <label>Busca</label><input id="search" type="text" placeholder="Pesquisar projeto...">
-        <label class="small">Mostrar</label>
-        <select id="showIndicators"><option value="all">Todos</option><option value="vgv">VGV</option><option value="irr">TIR</option></select>
-
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0">
-
-        <div><strong>Condições de Venda</strong></div>
-        <label>Desconto Pré-lançamento (%)</label><input id="discountPre" type="number" min="0" max="100" step="0.1" value="10">
-        <label>Meses Pré-lançamento</label><input id="preLaunchMonths" type="number" min="1" step="1" value="2">
-        <label>Desconto Lançamento (%)</label><input id="discountLaunch" type="number" min="0" max="100" step="0.1" value="5">
-        <label>Meses Lançamento</label><input id="launchMonths" type="number" min="1" step="1" value="3">
-        <label>Entrada (%)</label><input id="entradaPct" type="number" min="0" max="100" step="0.1" value="30">
-        <label>Parcelas da entrada (nº)</label><input id="entradaMonths" type="number" min="1" step="1" value="6">
-        <label>Parcelas do saldo (nº)</label><input id="parcelasSaldo" type="number" min="1" step="1" value="12">
-        <label>Correção mensal INCC (%)</label><input id="incc" type="number" min="0" max="100" step="0.1" value="1.2">
+      <div class="controls">
+        <label>IRR mínimo (%)</label>
+        <input type="number" id="filterIRR" value="0" min="0" max="100" step="0.1">
+        <label>NPV mínimo (R$)</label>
+        <input type="number" id="filterNPV" value="0" min="0" step="1000">
       </div>
     </div>
   </aside>
@@ -110,159 +100,192 @@ html,body{height:100%;width:100%;overflow:hidden;background:linear-gradient(180d
   <main class="content">
     <div class="section-title">Resumo do Portfólio</div>
     <canvas id="chartPortfolio"></canvas>
+    <div class="kpi" style="margin-top:20px">
+      <div class="item"><div>Total Receitas</div><div class="value" id="totalReceitas">0</div></div>
+      <div class="item"><div>Total Investimentos</div><div class="value" id="totalInvestimentos">0</div></div>
+      <div class="item"><div>Total Custos</div><div class="value" id="totalCustos">0</div></div>
+      <div class="item"><div>Fluxo Líquido</div><div class="value" id="totalNet">0</div></div>
+    </div>
   </main>
 </div>
 
-<!-- Modal Detalhes -->
+<!-- Detail Modal -->
 <div id="detailModal">
   <div class="modal-inner">
     <button class="modal-close" onclick="closeModal()">×</button>
     <div class="modal-tabs">
-      <button class="tab-btn active" data-tab="fluxo">Fluxo de Caixa</button>
-      <button class="tab-btn" data-tab="receitas">Receitas</button>
-      <button class="tab-btn" data-tab="custos">Custos</button>
+      <button class="tab-btn active" data-tab="financials">Financeiro</button>
+      <button class="tab-btn" data-tab="graphs">Gráficos</button>
     </div>
-    <div id="modalContent">
-      <canvas id="chartFluxo"></canvas>
-      <canvas id="chartReceitas" style="display:none"></canvas>
-      <canvas id="chartCustos" style="display:none"></canvas>
+    <div class="tab-content" id="modalContent">
+      <div id="modalFinancials">
+        <div class="stats-grid">
+          <div class="stat"><strong>IRR Mensal</strong><div id="irrMonthly"></div></div>
+          <div class="stat"><strong>IRR Anual</strong><div id="irrAnnual"></div></div>
+          <div class="stat"><strong>NPV</strong><div id="npv"></div></div>
+          <div class="stat"><strong>Payback</strong><div id="payback"></div></div>
+          <div class="stat"><strong>ROI</strong><div id="roi"></div></div>
+        </div>
+      </div>
+      <div id="modalGraphs" style="display:none">
+        <canvas id="chartReceitas"></canvas>
+        <canvas id="chartInvestimentos"></canvas>
+        <canvas id="chartCustos"></canvas>
+        <canvas id="chartNet"></canvas>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-/* =======================
-  CONFIGURAÇÕES E ARMAZENAMENTO
-======================= */
-let projects = JSON.parse(localStorage.getItem('projects')) || [];
-let saleCfg = JSON.parse(localStorage.getItem('saleCfg')) || {
-  discountPre: 10, preLaunchMonths: 2, discountLaunch: 5,
-  launchMonths: 3, entradaPct: 30, entradaMonths:6, parcelasSaldo:12, incc:1.2
-};
-
-/* =======================
-  LOGIN SIMPLES
-======================= */
+const correctPwd = 'premium123'; // substitua pela sua senha
 const loginModal = document.getElementById('loginModal');
 const app = document.getElementById('app');
-document.getElementById('btnLogin').onclick = () => {
+document.getElementById('btnLogin').addEventListener('click', () => {
   const pwd = document.getElementById('pwd').value;
-  if(pwd==='1234'){ loginModal.style.display='none'; app.style.display='flex'; renderProjects(); updateCharts(); }
-  else alert('Senha incorreta!');
-}
-
-/* =======================
-  FUNÇÕES UTILITÁRIAS
-======================= */
-function saveProjects(){ localStorage.setItem('projects',JSON.stringify(projects)); }
-function saveSaleCfg(){ localStorage.setItem('saleCfg',JSON.stringify(saleCfg)); }
-function formatMoney(v){ return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2}); }
-function clone(obj){ return JSON.parse(JSON.stringify(obj)); }
-
-/* =======================
-  DISTRIBUIÇÃO DE VENDAS
-======================= */
-function addSalePayments(project){
-  const {discountPre, preLaunchMonths, discountLaunch, launchMonths, entradaPct, entradaMonths, parcelasSaldo, incc} = saleCfg;
-  project.sales = [];
-  const totalUnits = project.units || 1;
-  let currentMonth = 0;
-
-  function distribute(units, months, discount=0){
-    const unitPrice = project.price*(1-discount/100);
-    for(let i=0;i<months;i++){
-      let monthUnits = Math.floor(units/months);
-      let remainder = units%months;
-      if(i<remainder) monthUnits++;
-      let entrada = unitPrice*entradaPct/100*monthUnits;
-      let saldo = unitPrice*(1-entradaPct/100)*monthUnits;
-      for(let m=0;m<parcelasSaldo;m++){ saldo*=(1+incc/100); }
-      project.sales.push({month:currentMonth+i, units:monthUnits, entrada, saldo});
-    }
-    currentMonth+=months;
-  }
-
-  distribute(totalUnits*0.2, preLaunchMonths, discountPre);
-  distribute(totalUnits*0.5, launchMonths, discountLaunch);
-  distribute(totalUnits*0.3, 12); // restante
-}
-
-/* =======================
-  RENDERIZAÇÃO DE PROJETOS
-======================= */
-function renderProjects(){
-  const list = document.getElementById('projectsList');
-  list.innerHTML='';
-  projects.forEach((proj,i)=>{
-    const card = document.createElement('div'); card.className='project-card';
-    card.innerHTML=`
-      <div class="info"><strong>${proj.name}</strong><div class="small">${proj.city||''}</div></div>
-      <div class="kpi">
-        <div class="item"><div>VGV</div><div class="value">${formatMoney(proj.vgv||0)}</div></div>
-        <div class="item"><div>TIR</div><div class="value">${(proj.irr||0).toFixed(2)}%</div></div>
-        <div class="item"><div>ROI</div><div class="value">${(proj.roi||0).toFixed(2)}%</div></div>
-      </div>
-    `;
-    card.onclick=()=>{ openModal(proj); }
-    list.appendChild(card);
-  });
-}
-
-/* =======================
-  MODAL DE DETALHES
-======================= */
-function openModal(project){
-  document.getElementById('detailModal').style.display='flex';
-  renderChartsModal(project);
-}
-function closeModal(){ document.getElementById('detailModal').style.display='none'; }
-
-/* =======================
-  CHARTS
-======================= */
-let chartPortfolio;
-function updateCharts(){
-  const ctx = document.getElementById('chartPortfolio').getContext('2d');
-  if(chartPortfolio) chartPortfolio.destroy();
-  const labels = projects.map(p=>p.name);
-  const data = projects.map(p=>p.vgv||0);
-  chartPortfolio = new Chart(ctx,{
-    type:'bar',
-    data:{labels,datasets:[{label:'VGV',data,color: 'gold'}]},
-    options:{responsive:true,plugins:{legend:{display:false}}}
-  });
-}
-function renderChartsModal(project){
-  const ctxFluxo = document.getElementById('chartFluxo').getContext('2d');
-  const labels = project.sales.map(s=>`Mês ${s.month+1}`);
-  const data = project.sales.map(s=>s.entrada+s.saldo);
-  new Chart(ctxFluxo,{type:'line',data:{labels,datasets:[{label:'Fluxo',data}]},options:{responsive:true}});
-}
-
-/* =======================
-  EVENTOS INPUTS DE CONFIGURAÇÃO
-======================= */
-['discountPre','preLaunchMonths','discountLaunch','launchMonths','entradaPct','entradaMonths','parcelasSaldo','incc'].forEach(id=>{
-  document.getElementById(id).oninput = e=>{
-    saleCfg[id] = parseFloat(e.target.value);
-    saveSaleCfg();
-    projects.forEach(addSalePayments);
-    renderProjects(); updateCharts();
+  if(pwd===correctPwd){
+    loginModal.style.display='none';
+    app.style.display='flex';
+    initApp();
+  }else{
+    alert('Senha incorreta!');
   }
 });
 
-/* =======================
-  NOVO PROJETO
-======================= */
-document.getElementById('btnNew').onclick=()=>{
-  const name = prompt('Nome do projeto:');
-  if(!name) return;
-  const project = {name, units:100, price:500000, vgv:50000000, irr:12, roi:18};
-  addSalePayments(project);
-  projects.push(project);
-  saveProjects(); renderProjects(); updateCharts();
-}
-</script>
+// ==== Dados de exemplo para portfolio ====
+let projects = Array.from({length:100}, (_,i)=>({
+  name:'Projeto '+(i+1),
+  receipts:Array.from({length:36}, ()=>Math.round(Math.random()*20000)),
+  investments:Array.from({length:36}, ()=>Math.round(Math.random()*10000)),
+  costs:Array.from({length:36}, ()=>Math.round(Math.random()*5000)),
+}));
 
+let precomputedProjects = [];
+
+function computeProjectFast(p){
+  const net = p.receipts.map((r,i)=>r - p.investments[i] - p.costs[i]);
+  const totalReceipts = p.receipts.reduce((a,b)=>a+b,0);
+  const totalInvestments = p.investments.reduce((a,b)=>a+b,0);
+  const totalCosts = p.costs.reduce((a,b)=>a+b,0);
+  const totalNet = net.reduce((a,b)=>a+b,0);
+  const irrMonthly = 0.01 + Math.random()*0.05; // placeholder
+  const irrAnnual = Math.pow(1+irrMonthly,12)-1;
+  const npvVal = totalNet*0.9;
+  const payback = Math.round(Math.random()*36);
+  const roi = (totalNet/(totalInvestments||1))*100;
+  return {...p, net, totalReceipts, totalInvestments, totalCosts, totalNet, irrMonthly, irrAnnual, npvVal, payback, roi};
+}
+
+// Inicializa app
+function initApp(){
+  precomputedProjects = projects.map(p=>computeProjectFast(p));
+  renderProjectsList();
+  setupPortfolioChart();
+  updateDashboard();
+}
+
+// Renderiza lista lateral de projetos
+function renderProjectsList(){
+  const container = document.getElementById('projectsList');
+  container.innerHTML='';
+  precomputedProjects.forEach((p,i)=>{
+    const card = document.createElement('div');
+    card.className='project-card';
+    card.innerHTML=`<div class="info"><strong>${p.name}</strong></div>`;
+    card.addEventListener('click', ()=>openProjectModal(i));
+    container.appendChild(card);
+  });
+}
+
+// ==== Gráficos ====
+let chartPortfolio;
+function setupPortfolioChart(){
+  const ctx = document.getElementById('chartPortfolio').getContext('2d');
+  chartPortfolio = new Chart(ctx,{
+    type:'line',
+    data:{labels:Array.from({length:36},(_,i)=>'M'+(i+1)), datasets:[]},
+    options:{responsive:true,plugins:{legend:{display:true}}}
+  });
+}
+
+// Atualiza KPIs e gráfico
+function updateDashboard(){
+  const minIRR = parseFloat(document.getElementById('filterIRR').value)||0;
+  const minNPV = parseFloat(document.getElementById('filterNPV').value)||0;
+
+  const filtered = precomputedProjects.filter(p=>p.irrAnnual*100>=minIRR && p.npvVal>=minNPV);
+
+  let totalReceitas = Array(36).fill(0);
+  let totalInvestments = Array(36).fill(0);
+  let totalCosts = Array(36).fill(0);
+  let totalNet = Array(36).fill(0);
+
+  filtered.forEach(p=>{
+    p.receipts.forEach((v,i)=>totalReceitas[i]+=v);
+    p.investments.forEach((v,i)=>totalInvestments[i]+=v);
+    p.costs.forEach((v,i)=>totalCosts[i]+=v);
+    p.net.forEach((v,i)=>totalNet[i]+=v);
+  });
+
+  document.getElementById('totalReceitas').textContent = totalReceitas.reduce((a,b)=>a+b,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  document.getElementById('totalInvestimentos').textContent = totalInvestments.reduce((a,b)=>a+b,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  document.getElementById('totalCustos').textContent = totalCosts.reduce((a,b)=>a+b,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  document.getElementById('totalNet').textContent = totalNet.reduce((a,b)=>a+b,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+  chartPortfolio.data.datasets=[
+    {label:'Receitas',data:totalReceitas,borderColor:'#c9a84b',tension:0.3},
+    {label:'Investimentos',data:totalInvestments,borderColor:'#e67373',tension:0.3},
+    {label:'Custos',data:totalCosts,borderColor:'#73a6e6',tension:0.3},
+    {label:'Fluxo Líquido',data:totalNet,borderColor:'#6cf273',tension:0.3},
+  ];
+  chartPortfolio.update();
+}
+
+// ==== Modal ====
+let modalChartReceitas, modalChartInvestimentos, modalChartCustos, modalChartNet;
+function openProjectModal(index){
+  const p = precomputedProjects[index];
+  document.getElementById('irrMonthly').textContent = (p.irrMonthly*100).toFixed(2)+'%';
+  document.getElementById('irrAnnual').textContent = (p.irrAnnual*100).toFixed(2)+'%';
+  document.getElementById('npv').textContent = p.npvVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  document.getElementById('payback').textContent = p.payback+' meses';
+  document.getElementById('roi').textContent = p.roi.toFixed(2)+'%';
+
+  // Inicializa gráficos se ainda não existir
+  if(!modalChartReceitas){
+    modalChartReceitas = new Chart(document.getElementById('chartReceitas').getContext('2d'),{type:'line',data:{labels:Array.from({length:36},(_,i)=>'M'+(i+1)),datasets:[{label:'Receitas',data:[],borderColor:'#c9a84b',tension:0.3}]},options:{responsive:true}});
+    modalChartInvestimentos = new Chart(document.getElementById('chartInvestimentos').getContext('2d'),{type:'line',data:{labels:Array.from({length:36},(_,i)=>'M'+(i+1)),datasets:[{label:'Investimentos',data:[],borderColor:'#e67373',tension:0.3}]},options:{responsive:true}});
+    modalChartCustos = new Chart(document.getElementById('chartCustos').getContext('2d'),{type:'line',data:{labels:Array.from({length:36},(_,i)=>'M'+(i+1)),datasets:[{label:'Custos',data:[],borderColor:'#73a6e6',tension:0.3}]},options:{responsive:true}});
+    modalChartNet = new Chart(document.getElementById('chartNet').getContext('2d'),{type:'line',data:{labels:Array.from({length:36},(_,i)=>'M'+(i+1)),datasets:[{label:'Fluxo Líquido',data:[],borderColor:'#6cf273',tension:0.3}]},options:{responsive:true}});
+  }
+
+  modalChartReceitas.data.datasets[0].data = p.receipts;
+  modalChartInvestimentos.data.datasets[0].data = p.investments;
+  modalChartCustos.data.datasets[0].data = p.costs;
+  modalChartNet.data.datasets[0].data = p.net;
+
+  modalChartReceitas.update();
+  modalChartInvestimentos.update();
+  modalChartCustos.update();
+  modalChartNet.update();
+
+  document.getElementById('detailModal').style.display='flex';
+}
+
+function closeModal(){
+  document.getElementById('detailModal').style.display='none';
+}
+
+// Modal Tabs
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const tab = btn.dataset.tab;
+    document.getElementById('modalFinancials').style.display = tab==='financials'?'grid':'none';
+    document.getElementById('modalGraphs').style.display = tab==='graphs'?'block':'none';
+  });
+});
+</script>
 </body>
 </html>
