@@ -211,16 +211,16 @@ html,body{
 </header>
 
 <!-- Login Modal -->
-<div id="loginModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:50">
-  <div style="background:#0b0b0b;padding:22px;border-radius:10px;width:420px;border:1px solid rgba(255,255,255,0.04)">
-    <h3 style="margin-top:0;color:var(--gold)">Acesso ao Painel</h3>
-    <p class="small" style="margin-bottom:12px">Insira a senha para editar os valores</p>
-    <input id="pwd" type="password" placeholder="Senha" style="width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--accent)">
-    <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
-      <button id="btnLogin" class="button">Entrar</button>
+<div id="loginModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:50">
+  <div style="background:#0b0b0b;padding:28px;border-radius:12px;width:420px;border:1px solid rgba(255,255,255,0.05);box-shadow:0 0 15px rgba(201,168,75,0.4);transition:all 0.3s ease" id="loginBox">
+    <h2 style="margin-top:0;color:var(--gold);text-align:center">Acesso Premium</h2>
+    <p class="small" style="margin-bottom:16px;text-align:center;color:var(--muted)">Digite a senha para desbloquear o painel completo</p>
+    <input id="pwd" type="password" placeholder="Senha" style="width:100%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--accent);transition:border 0.2s, box-shadow 0.2s">
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button id="btnLogin" class="button" style="flex:1">Entrar</button>
     </div>
-    <p class="small" style="margin-top:10px;color:var(--muted)">Senha? <strong>Entre em contato!</strong></p>
-    </div>
+    <p class="small" style="margin-top:12px;color:var(--muted);text-align:center">Esqueceu a senha? <strong>Entre em contato!</strong></p>
+  </div>
 </div>
 
 <div class="container" id="app" style="display:none">
@@ -810,17 +810,32 @@ function saveAll(){ localStorage.setItem('aps_projects',JSON.stringify(projects)
 function exportJson(){const blob=new Blob([JSON.stringify(projects,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.json';a.click();URL.revokeObjectURL(url);}
 function downloadCsv(){const rows=['id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales'];projects.forEach(p=>rows.push([p.id,p.name,p.city,p.units,p.area,p.price_m2,p.cost_m2,p.months,p.pre_launch_sales,p.launch_sales,p.monthly_sales].join(',')));const blob=new Blob([rows.join('\n')],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.csv';a.click();URL.revokeObjectURL(url);}
 
-document.getElementById('btnLogin').addEventListener('click',()=>{
-  const v=document.getElementById('pwd').value;
-  if(v===PASSWORD){
-    document.getElementById('loginModal').style.display='none';
-    document.getElementById('app').style.display='flex';
-    const saved=localStorage.getItem('aps_projects');
-    if(saved)try{projects=JSON.parse(saved);}catch(e){}
+document.getElementById('btnLogin').addEventListener('click', () => {
+  const input = document.getElementById('pwd');
+  const box = document.getElementById('loginBox');
+  if (input.value === PASSWORD) {
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    const saved = localStorage.getItem('aps_projects');
+    if (saved) try { projects = JSON.parse(saved); } catch(e){}
     loadCfg();
     renderSidebar();
-  }else alert('Senha incorreta');
+  } else {
+    // efeito de erro (shake)
+    box.style.transform = 'translateX(-10px)';
+    box.style.borderColor = '#f44336';
+    box.style.boxShadow = '0 0 15px rgba(244,67,54,0.6)';
+    setTimeout(() => { box.style.transform = 'translateX(10px)'; }, 100);
+    setTimeout(() => { box.style.transform = 'translateX(-10px)'; }, 200);
+    setTimeout(() => { box.style.transform = 'translateX(0)'; box.style.borderColor = 'rgba(255,255,255,0.05)'; box.style.boxShadow='0 0 15px rgba(201,168,75,0.4)'; }, 300);
+    input.value = '';
+    input.focus();
+  }
 });
+  // Permite Enter no campo senha
+document.getElementById('pwd').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') document.getElementById('btnLogin').click();
+}); 
 document.getElementById('btnExport').addEventListener('click',exportJson);
 document.getElementById('btnPublish').addEventListener('click',saveAll);
 document.getElementById('btnReset').addEventListener('click',()=>{if(confirm('Restaurar valores iniciais?')){localStorage.removeItem('aps_projects');localStorage.removeItem(cfgKey);location.reload();}});
