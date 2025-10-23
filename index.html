@@ -267,6 +267,9 @@ html,body{
         <label>Parcelas do saldo (nº)</label>
         <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
 
+        <label>Correção mensal (INCC)</label>
+        <input id="incc" type="number" min="0" step="0.001" value="0.005">
+
         <div class="small" style="margin-top:6px">A entrada é paga em X parcelas a partir do mês da venda; o restante (saldo) é pago em Y parcelas subsequentes.</div>
 
         <div style="display:flex;gap:8px;margin-top:10px">
@@ -411,6 +414,7 @@ function loadCfg(){
   document.getElementById('entradaMonths').value = saleCfg.entradaMonths;
   document.getElementById('preLaunchMonths').value = saleCfg.preLaunchMonths;
   document.getElementById('launchMonths').value = saleCfg.launchMonths;
+  document.getElementById('incc').value = saleCfg.incc ?? 0.005;
 }
 function saveCfg(){
   saleCfg.discountPre = Number(document.getElementById('discountPre').value) || 0;
@@ -420,6 +424,7 @@ function saveCfg(){
   saleCfg.entradaMonths = Math.max(1, Math.floor(Number(document.getElementById('entradaMonths').value) || 6));
   saleCfg.preLaunchMonths = Math.max(1, Math.floor(Number(document.getElementById('preLaunchMonths').value) || 2));
   saleCfg.launchMonths = Math.max(1, Math.floor(Number(document.getElementById('launchMonths').value) || 3));
+  saleCfg.incc = Number(document.getElementById('incc').value) || 0.005;
   localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
   renderSidebar();
 }
@@ -474,32 +479,37 @@ function computeProject(p) {
   // função que adiciona parcelas para uma unidade vendida num determinado mês
   // params: saleMonth (0-index), price_unit (já com desconto quando aplicável), targetArray (receiptsX)
   function addSalePayments(saleMonth, price_unit, targetArray) {
-    // entrada configurável (percentual e nº parcelas)
-    const entradaPct = (cfg.entradaPct || 30) / 100;
-    const entradaMonths = cfg.entradaMonths || 6;
+  const entradaPct = (cfg.entradaPct || 30) / 100;
+  const entradaMonths = cfg.entradaMonths || 6;
 
-    const entradaTotal = price_unit * entradaPct;
-    const entradaParcel = entradaTotal / entradaMonths;
+  const entradaTotal = price_unit * entradaPct;
+  const entradaParcel = entradaTotal / entradaMonths;
 
-    // restante do saldo
-    const restantePct = 1 - entradaPct;
-    const restanteTotal = price_unit * restantePct;
-    const restParc = cfg.parcelasRestantes || 24;
+  const restantePct = 1 - entradaPct;
+  const restanteTotal = price_unit * restantePct;
+  const restParc = cfg.parcelasRestantes || 24;
 
-    // distribuir parcelas da entrada
-    for (let m = 0; m < entradaMonths; m++) {
-      const idx = saleMonth + m;
-      ensureLen(targetArray, idx+1);
-      targetArray[idx] += entradaParcel;
-    }
+  // ---- Parâmetros de correção ----
+  const correcaoMensal = (cfg.incc || 0.005); // 0.5% ao mês por padrão
+  const tipoCorrecao = (cfg.tipoCorrecao || 'INCC'); // apenas para exibição futura
 
-    // distribuir parcelas do saldo a partir de saleMonth + entradaMonths
-    for (let m = 0; m < restParc; m++) {
-      const idx = saleMonth + entradaMonths + m;
-      ensureLen(targetArray, idx+1);
-      targetArray[idx] += restanteTotal / restParc;
-    }
+  // Função para aplicar correção acumulada
+  const corr = (mes) => Math.pow(1 + correcaoMensal, mes - saleMonth);
+
+  // distribuir parcelas da entrada com correção
+  for (let m = 0; m < entradaMonths; m++) {
+    const idx = saleMonth + m;
+    ensureLen(targetArray, idx + 1);
+    targetArray[idx] += entradaParcel * corr(idx);
   }
+
+  // distribuir parcelas do saldo com correção
+  for (let m = 0; m < restParc; m++) {
+    const idx = saleMonth + entradaMonths + m;
+    ensureLen(targetArray, idx + 1);
+    targetArray[idx] += (restanteTotal / restParc) * corr(idx);
+  }
+}
 
   // distribuir vendas conforme tipo (pré, lançamento, mensais)
   // distribui 'units' unidades ao longo de 'periodMonths' meses, começando em startMonth
@@ -857,6 +867,7 @@ document.getElementById('entradaPct').addEventListener('change',saveCfg);
 document.getElementById('entradaMonths').addEventListener('change',saveCfg);
 document.getElementById('preLaunchMonths').addEventListener('change',saveCfg);
 document.getElementById('launchMonths').addEventListener('change',saveCfg);
+document.getElementById('incc').addEventListener('change', saveCfg);
 
 window.addEventListener('load',()=>{
   const saved=localStorage.getItem('aps_projects');
