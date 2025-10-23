@@ -544,19 +544,22 @@ function renderSidebar(){
   </div>
 `;
     info.querySelectorAll('input').forEach(inp=>{
-  // Impede que o clique no input abra o modal
   inp.addEventListener('click', e => e.stopPropagation());
 
-  inp.addEventListener('input',()=>{
-    const field=inp.dataset.field;
-    if(['units','area','price_m2','cost_m2','months','pre_launch_sales','launch_sales','monthly_sales'].includes(field)) {
-      p[field]=Number(inp.value);
+  // Atualiza só quando o usuário sai do campo (blur) ou confirma (change)
+  const handleUpdate = () => {
+    const field = inp.dataset.field;
+    if (['units','area','price_m2','cost_m2','months','pre_launch_sales','launch_sales','monthly_sales'].includes(field)) {
+      p[field] = Number(inp.value);
     } else {
-      p[field]=inp.value;
+      p[field] = inp.value;
     }
-    renderSidebar(); 
-    if(document.getElementById('detailModal').style.display === 'flex') openProjectModal(p.id);
-  });
+    renderSidebar();
+    if (document.getElementById('detailModal').style.display === 'flex') openProjectModal(p.id);
+  };
+
+  inp.addEventListener('change', handleUpdate);
+  inp.addEventListener('blur', handleUpdate);
 });
 
     div.appendChild(info); div.addEventListener('click',()=>openProjectModal(p.id));
