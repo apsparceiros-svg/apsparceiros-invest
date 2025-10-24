@@ -460,165 +460,123 @@ function irr(values, guess = 0.01) {
   return rate;
 }
 
-// ===== Novo cálculo de distribuição de vendas com desconto e parcelamento =====
+// ===== Função principal de cálculo do projeto =====
 function computeProject(p) {
-  // carregar cfg atual
   const cfg = saleCfg;
-
   const months = p.months;
   const price_unit_full = p.area * p.price_m2;
   const VGV = p.units * price_unit_full;
   const totalConstruction = p.units * p.area * p.cost_m2;
 
-  // arrays dinâmicos de recebimentos (podem ultrapassar 'months')
-  const receiptsPre = [];   // por mês
-  const receiptsLaunch = [];
-  const receiptsMonthly = [];
-  const investments = [];
-  const costs = [];
+  const receiptsPre = [], receiptsLaunch = [], receiptsMonthly = [], investments = [], costs = [];
 
-  // helper: ensure length
-  function ensureLen(arr, len){
-    while(arr.length < len) arr.push(0);
-  }
+  function ensureLen(arr, len){ while(arr.length < len) arr.push(0); }
 
-  // função que adiciona parcelas para uma unidade vendida num determinado mês
-  // params: saleMonth (0-index), price_unit (já com desconto quando aplicável), targetArray (receiptsX)
-  function addSalePayments(saleMonth, price_unit, targetArray) {
-  const entradaPct = (cfg.entradaPct || 30) / 100;
-  const entradaMonths = cfg.entradaMonths || 6;
+  function addSalePayments(saleMonth, price_unit, targetArray, cfg, p) {
+    const entradaPct = (cfg.entradaPct || 30)/100;
+    const entradaMonths = cfg.entradaMonths || 6;
+    const entradaTotal = price_unit*entradaPct;
+    const entradaParcel = entradaTotal/entradaMonths;
+    const restantePct = 1 - entradaPct;
+    const restanteTotal = price_unit*restantePct;
+    const restParc = cfg.parcelasRestantes || 24;
+    const incc = Number(cfg.incc || 0.0045);
+    const ipca = Number(cfg.ipca || 0.004);
 
-  const entradaTotal = price_unit * entradaPct;
-  const entradaParcel = entradaTotal / entradaMonths;
+    function projCorr(mes){ 
+      if(mes<p.months) return Math.pow(1+incc, mes-saleMonth);
+      return Math.pow(1+incc,p.months-saleMonth)*Math.pow(1+ipca, mes-p.months);
+    }
 
-  const restantePct = 1 - entradaPct;
-  const restanteTotal = price_unit * restantePct;
-  const restParc = cfg.parcelasRestantes || 24;
-
-  const incc = Number(cfg.incc || 0.0045);   // INCC durante obra
-  const ipca = Number(cfg.ipca || 0.005);    // IPCA após entrega
-
-  function corr(mes) {
-    // aplica INCC enquanto o mês <= obra (p.months), depois aplica IPCA
-    return mes < p.months ? Math.pow(1 + incc, mes - saleMonth)
-                           : Math.pow(1 + ipca, mes - saleMonth);
-  }
-
-  // distribuir parcelas da entrada
-  for (let m = 0; m < entradaMonths; m++) {
-    const idx = saleMonth + m;
-    ensureLen(targetArray, idx + 1);
-    targetArray[idx] += entradaParcel * corr(idx);
-  }
-
-  // distribuir parcelas do saldo
-  for (let m = 0; m < restParc; m++) {
-    const idx = saleMonth + entradaMonths + m;
-    ensureLen(targetArray, idx + 1);
-    targetArray[idx] += (restanteTotal / restParc) * corr(idx);
-  }
-}
-
-  // distribuir vendas conforme tipo (pré, lançamento, mensais)
-  // distribui 'units' unidades ao longo de 'periodMonths' meses, começando em startMonth
-  function distributeUnits(units, startMonth, receiptsArr, type, periodMonths) {
-    if (units <= 0) return;
-    periodMonths = Math.max(1, Math.floor(periodMonths || 1));
-    for (let u = 0; u < units; u++) {
-      // distribuir proporcionalmente dentro do período
-      // o índice dentro do período é proporcional à ordem da unidade
-      const monthOffsetWithinPeriod = Math.floor(u * periodMonths / units);
-      const saleMonth = startMonth + monthOffsetWithinPeriod;
-      let price_unit = price_unit_full;
-      if (type === 'pre' && cfg.discountPre) price_unit = price_unit_full * (1 - cfg.discountPre/100);
-      if (type === 'launch' && cfg.discountLaunch) price_unit = price_unit_full * (1 - cfg.discountLaunch/100);
-      addSalePayments(saleMonth, price_unit, receiptsArr);
+    for(let m=0;m<entradaMonths;m++){
+      const idx = saleMonth+m;
+      ensureLen(targetArray, idx+1);
+      targetArray[idx] += entradaParcel;
+    }
+    for(let m=0;m<restParc;m++){
+      const idx = saleMonth+entradaMonths+m;
+      ensureLen(targetArray, idx+1);
+      targetArray[idx] += restanteTotal/restParc;
+    }
+    if(cfg.applyProjection===true){
+      for(let i=0;i<targetArray.length;i++) targetArray[i]*=projCorr(i);
     }
   }
 
-  // distribuir pré-lançamento (começa mês 0)
-  distributeUnits(p.pre_launch_sales, 0, receiptsPre, 'pre', cfg.preLaunchMonths);
+  function distributeUnits(units, startMonth, receiptsArr, type, periodMonths){
+    if(units<=0) return;
+    periodMonths = Math.max(1,Math.floor(periodMonths||1));
+    for(let u=0; u<units; u++){
+      const monthOffsetWithinPeriod = Math.floor(u*periodMonths/units);
+      const saleMonth = startMonth + monthOffsetWithinPeriod;
+      let price_unit = price_unit_full;
+      if(type==='pre' && cfg.discountPre) price_unit *= (1-cfg.discountPre/100);
+      if(type==='launch' && cfg.discountLaunch) price_unit *= (1-cfg.discountLaunch/100);
+      addSalePayments(saleMonth, price_unit, receiptsArr, cfg, p);
+    }
+  }
 
-  // distribuir lançamento (começa após pré-lançamento)
+  distributeUnits(p.pre_launch_sales, 0, receiptsPre, 'pre', cfg.preLaunchMonths);
   distributeUnits(p.launch_sales, cfg.preLaunchMonths, receiptsLaunch, 'launch', cfg.launchMonths);
 
-  // vendas mensais após lançamento:
   let unitsAssigned = p.pre_launch_sales + p.launch_sales;
   let monthIdx = cfg.preLaunchMonths + cfg.launchMonths;
-  while (unitsAssigned < p.units) {
+  while(unitsAssigned < p.units){
     const unitsRemaining = p.units - unitsAssigned;
     const unitsThisMonth = Math.min(p.monthly_sales, unitsRemaining);
-    // para vendas mensais, cada unidade é vendida no próprio mês (sem período estendido)
     distributeUnits(unitsThisMonth, monthIdx, receiptsMonthly, 'monthly', 1);
     unitsAssigned += unitsThisMonth;
     monthIdx++;
-    if (monthIdx > 2000) break; // safety
+    if(monthIdx>2000) break;
   }
 
-  // agora unimos arrays e definimos o tamanho final (o maior índice existente)
   const finalLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, months);
 
-  // ===== Investimentos mensais (mantém o modelo anterior até 'months') =====
+  // ===== Investimentos =====
   const incc = 0.0045;
-  const den = (months * (months + 1)) / 2;
-  for (let m = 1; m <= finalLen; m++) {
-    if (m <= months) {
-      const prop = m / den;
-      const base = totalConstruction * prop;
-      investments[m - 1] = base * Math.pow(1 + incc, m);
-    } else {
-      investments[m - 1] = 0; // sem investimentos após conclusão
-    }
+  const den = (months*(months+1))/2;
+  for(let m=1;m<=finalLen;m++){
+    if(m<=months){
+      const prop = m/den;
+      const base = totalConstruction*prop;
+      investments[m-1] = base*Math.pow(1+incc,m);
+    } else investments[m-1] = 0;
   }
 
-  // ===== Custos mensais (mantemos custos até months; após isso zero) =====
-  for (let m = 0; m < finalLen; m++) {
-    if (m < months) {
-      costs[m] = 0;
-      const marketingTotal = 0.015 * VGV;
-      const marketingMonthly = marketingTotal / months;
-      costs[m] += marketingMonthly;        // marketing proporcional
-      costs[m] += 8000 + 3000;             // custos fixos
-      if (m === 11) costs[m] += 0.01 * VGV; // custo anual adicional
-      if (m === 0) costs[m] += 0.05 * totalConstruction; // entrada de construção
-    } else {
-      costs[m] = 0;
-    }
+  // ===== Custos =====
+  for(let m=0;m<finalLen;m++){
+    if(m<months){
+      costs[m]=0;
+      const marketingTotal = 0.015*VGV;
+      const marketingMonthly = marketingTotal/months;
+      costs[m] += marketingMonthly + 8000 + 3000;
+      if(m===11) costs[m] += 0.01*VGV;
+      if(m===0) costs[m] += 0.05*totalConstruction;
+    } else costs[m]=0;
   }
 
-  // preencher arrays de receipts combinados por mês
   const receipts = [];
-  for (let i = 0; i < finalLen; i++) {
-    const a = i < receiptsPre.length ? receiptsPre[i] : 0;
-    const b = i < receiptsLaunch.length ? receiptsLaunch[i] : 0;
-    const c = i < receiptsMonthly.length ? receiptsMonthly[i] : 0;
-    receipts[i] = a + b + c;
+  for(let i=0;i<finalLen;i++){
+    const a=i<receiptsPre.length?receiptsPre[i]:0;
+    const b=i<receiptsLaunch.length?receiptsLaunch[i]:0;
+    const c=i<receiptsMonthly.length?receiptsMonthly[i]:0;
+    receipts[i] = a+b+c;
   }
 
-  // ===== Fluxo líquido =====
-  const net = receipts.map((r, i) => r - (investments[i] || 0) - (costs[i] || 0));
+  const net = receipts.map((r,i)=>r-(investments[i]||0)-(costs[i]||0));
 
-  // ===== Indicadores financeiros =====
   const irrMonthly = irr(net);
-  const irrAnnual = isFinite(irrMonthly) ? Math.pow(1 + irrMonthly, 12) - 1 : NaN;
-  const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
-  const npvVal = net.reduce((s, v, i) => s + v / Math.pow(1 + rate, i), 0);
+  const irrAnnual = isFinite(irrMonthly)?Math.pow(1+irrMonthly,12)-1:NaN;
+  const rate = Math.pow(1+0.12,1/12)-1;
+  const npvVal = net.reduce((s,v,i)=>s+v/Math.pow(1+rate,i),0);
 
-  // Payback (em meses desde o início do fluxo)
-  let cumul = 0;
-  let payback = '--';
-  for (let i = 0; i < net.length; i++) {
-    cumul += net[i];
-    if (cumul >= 0) { payback = i + 1; break; }
-  }
-
-  const totalNet = net.reduce((s, v) => s + v, 0);
-  const totalInvestment = investments.reduce((s, v) => s + v, 0);
-  const roi = totalInvestment === 0 ? 0 : (totalNet / totalInvestment) * 100;
-
-  // totals for display
-  const marketingTotal = 0.015 * VGV;
-  const brokerTotal = 0.05 * VGV;
+  let cumul=0, payback='--';
+  for(let i=0;i<net.length;i++){ cumul+=net[i]; if(cumul>=0){payback=i+1;break;} }
+  const totalNet = net.reduce((s,v)=>s+v,0);
+  const totalInvestment = investments.reduce((s,v)=>s+v,0);
+  const roi = totalInvestment===0?0:(totalNet/totalInvestment)*100;
+  const marketingTotal = 0.015*VGV;
+  const brokerTotal = 0.05*VGV;
 
   return {
     receiptsPre,
