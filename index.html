@@ -267,8 +267,11 @@ html,body{
         <label>Parcelas do saldo (nº)</label>
         <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
 
-        <label>Correção mensal (INCC)</label>
-        <input id="incc" type="number" min="0" step="0.001" value="0.005">
+        <label>Correção INCC (%)</label>
+        <input id="incc" type="number" min="0" step="0.001" value="0.0045">
+        
+        <label>Correção IPCA (%)</label>
+        <input id="ipca" type="number" min="0" step="0.001" value="0.005">
 
         <div class="small" style="margin-top:6px">A entrada é paga em X parcelas a partir do mês da venda; o restante (saldo) é pago em Y parcelas subsequentes.</div>
 
@@ -414,8 +417,10 @@ function loadCfg(){
   document.getElementById('entradaMonths').value = saleCfg.entradaMonths;
   document.getElementById('preLaunchMonths').value = saleCfg.preLaunchMonths;
   document.getElementById('launchMonths').value = saleCfg.launchMonths;
-  document.getElementById('incc').value = saleCfg.incc ?? 0.005;
+  document.getElementById('incc').value = saleCfg.incc ?? 0.0045;
+  document.getElementById('ipca').value = saleCfg.ipca ?? 0.005;
 }
+
 function saveCfg(){
   saleCfg.discountPre = Number(document.getElementById('discountPre').value) || 0;
   saleCfg.discountLaunch = Number(document.getElementById('discountLaunch').value) || 0;
@@ -424,7 +429,8 @@ function saveCfg(){
   saleCfg.entradaMonths = Math.max(1, Math.floor(Number(document.getElementById('entradaMonths').value) || 6));
   saleCfg.preLaunchMonths = Math.max(1, Math.floor(Number(document.getElementById('preLaunchMonths').value) || 2));
   saleCfg.launchMonths = Math.max(1, Math.floor(Number(document.getElementById('launchMonths').value) || 3));
-  saleCfg.incc = Number(document.getElementById('incc').value) || 0.005;
+  saleCfg.incc = Number(document.getElementById('incc').value) || 0.0045;
+  saleCfg.ipca = Number(document.getElementById('ipca').value) || 0.005;
   localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
   renderSidebar();
 }
@@ -489,21 +495,23 @@ function computeProject(p) {
   const restanteTotal = price_unit * restantePct;
   const restParc = cfg.parcelasRestantes || 24;
 
-  // ---- Parâmetros de correção ----
-  const correcaoMensal = (cfg.incc || 0.005); // 0.5% ao mês por padrão
-  const tipoCorrecao = (cfg.tipoCorrecao || 'INCC'); // apenas para exibição futura
+  const incc = Number(cfg.incc || 0.0045);   // INCC durante obra
+  const ipca = Number(cfg.ipca || 0.005);    // IPCA após entrega
 
-  // Função para aplicar correção acumulada
-  const corr = (mes) => Math.pow(1 + correcaoMensal, mes - saleMonth);
+  function corr(mes) {
+    // aplica INCC enquanto o mês <= obra (p.months), depois aplica IPCA
+    return mes < p.months ? Math.pow(1 + incc, mes - saleMonth)
+                           : Math.pow(1 + ipca, mes - saleMonth);
+  }
 
-  // distribuir parcelas da entrada com correção
+  // distribuir parcelas da entrada
   for (let m = 0; m < entradaMonths; m++) {
     const idx = saleMonth + m;
     ensureLen(targetArray, idx + 1);
     targetArray[idx] += entradaParcel * corr(idx);
   }
 
-  // distribuir parcelas do saldo com correção
+  // distribuir parcelas do saldo
   for (let m = 0; m < restParc; m++) {
     const idx = saleMonth + entradaMonths + m;
     ensureLen(targetArray, idx + 1);
@@ -868,6 +876,7 @@ document.getElementById('entradaMonths').addEventListener('change',saveCfg);
 document.getElementById('preLaunchMonths').addEventListener('change',saveCfg);
 document.getElementById('launchMonths').addEventListener('change',saveCfg);
 document.getElementById('incc').addEventListener('change', saveCfg);
+document.getElementById('ipca').addEventListener('change', saveCfg);
 
 window.addEventListener('load',()=>{
   const saved=localStorage.getItem('aps_projects');
