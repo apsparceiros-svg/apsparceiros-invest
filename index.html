@@ -17,43 +17,190 @@
   --accent:#e6e6e6;
 }
 
+/* ===== Ajustes gerais ===== */
 *{box-sizing:border-box;font-family:Inter,system-ui,Arial;color:var(--accent);margin:0;padding:0}
-html,body{height:100%;width:100%;overflow:hidden;background:linear-gradient(180deg,#040404,#0a0a0a);-webkit-font-smoothing:antialiased;font-size:17px;transform-origin: top left;transform: scale(1.00);}
-.header{display:flex;justify-content:space-between;align-items:center;padding:20px 28px;border-bottom:1px solid rgba(255,255,255,0.04);}
+html,body{
+  height:100%;
+  width:100%;
+  overflow:hidden; /* remove barras de rolagem */
+  background:linear-gradient(180deg,#040404,#0a0a0a);
+  -webkit-font-smoothing:antialiased;
+  font-size:17px;
+  transform-origin: top left;
+  transform: scale(1.00);
+}
+
+/* ===== Cabeçalho ===== */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px 28px;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
 .brand{font-weight:800;color:var(--gold);letter-spacing:0.6px;font-size:20px}
 .header .meta{color:var(--muted);font-size:14px}
-.container{display:flex;height:calc(100vh - 72px);width:100%;gap:28px;padding:28px;overflow:hidden;}
-.sidebar{width:22%;min-width:300px;background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));border-radius:12px;padding:18px;overflow-y:auto;scrollbar-width:thin;}
-.content{flex:1;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));border-radius:12px;padding:22px;overflow-y:auto;scrollbar-width:thin;}
+
+/* ===== Container full screen ===== */
+.container{
+  display:flex;
+  height:calc(100vh - 72px);
+  width:100%;
+  gap:28px;
+  padding:28px;
+  overflow:hidden;
+}
+.sidebar{
+  width:22%;
+  min-width:300px;
+  background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));
+  border-radius:12px;
+  padding:18px;
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+.content{
+  flex:1;
+  background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));
+  border-radius:12px;
+  padding:22px;
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
 .section-title{font-weight:700;color:var(--gold);margin-bottom:10px}
 .small{font-size:13px;color:var(--muted)}
-.project-card{background:var(--card);padding:14px;border-radius:10px;margin-bottom:14px;display:flex;gap:12px;flex-direction:column;border:1px solid rgba(255,255,255,0.03);cursor:pointer;}
+
+/* ===== Cartões e inputs ===== */
+.project-card{
+  background:var(--card);
+  padding:14px;
+  border-radius:10px;
+  margin-bottom:14px;
+  display:flex;
+  gap:12px;
+  flex-direction:column;
+  border:1px solid rgba(255,255,255,0.03);
+  cursor:pointer;
+}
 .project-card .info{flex:1;width:100%}
 .kpi{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
-.kpi .item{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:10px;border-radius:8px;min-width:90px;text-align:center}
+.kpi .item{
+  background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));
+  padding:10px;
+  border-radius:8px;
+  min-width:90px;
+  text-align:center
+}
 .kpi .value{font-weight:700;color:var(--gold);margin-top:6px}
+
 .controls label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
 .controls input[type=text],
 .controls input[type=number],
 .project-card input[type=text],
-.project-card input[type=number]{background-color:#1e1e1e;color:#fff;border:1px solid #c9a84b;padding:8px;border-radius:6px;width:100%;margin-bottom:6px;}
+.project-card input[type=number]{
+    background-color:#1e1e1e;
+    color:#fff;
+    border:1px solid #c9a84b;
+    padding:8px;
+    border-radius:6px;
+    width:100%;
+    margin-bottom:6px;
+}
 .project-card input:focus{outline:2px solid #c9a84b;background-color:#292929}
-.button{background:var(--gold);color:#0b0b0b;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700;}
+
+.button{
+  background:var(--gold);
+  color:#0b0b0b;
+  border:none;
+  padding:10px 14px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:700;
+}
 .button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent)}
-.card{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:14px;border-radius:10px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.03)}
+
+.card{
+  background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));
+  padding:14px;
+  border-radius:10px;
+  margin-bottom:14px;
+  border:1px solid rgba(255,255,255,0.03)
+}
+
+/* ===== Tooltip ===== */
 .tooltip{position:relative;display:inline-block}
-.tooltip .tt{visibility:hidden;width:260px;background:#0c0c0c;color:var(--muted);text-align:left;border-radius:6px;padding:10px;position:absolute;z-index:10;bottom:130%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .12s;}
+.tooltip .tt{
+  visibility:hidden;
+  width:260px;
+  background:#0c0c0c;
+  color:var(--muted);
+  text-align:left;
+  border-radius:6px;
+  padding:10px;
+  position:absolute;
+  z-index:10;
+  bottom:130%;
+  left:50%;
+  transform:translateX(-50%);
+  opacity:0;
+  transition:opacity .12s;
+}
 .tooltip:hover .tt{visibility:visible;opacity:1}
-#chartPortfolio, #chartFluxo, #chartReceitas, #chartCustos {min-height:360px;}
-#detailModal{position: fixed;inset:0;background: rgba(0,0,0,0.9);display:none;align-items:center;justify-content:center;z-index:200;}
-.modal-inner{width:94%;max-width:1200px;max-height:92vh;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,0.05);overflow:auto;position: relative;}
-.modal-close{position:absolute;right:16px;top:14px;background:transparent;border:none;color:var(--gold);font-size:22px;cursor:pointer;}
-.modal-tabs{display:flex; gap:10px; margin-bottom:14px;}
-.tab-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 14px;border-radius:8px;color:var(--accent);cursor:pointer;}
-.tab-btn.active{background:var(--gold); color:#0b0b0b; border-color:var(--gold)}
-.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-top:12px}
-.stat{background:var(--card);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
-@media(max-width:1100px){html,body{transform:scale(1);overflow:auto}.container{flex-direction:column;padding:18px;gap:18px;height:auto}.sidebar{width:auto;min-width:unset}}
+
+/* ===== Gráficos maiores ===== */
+#chartPortfolio, #chartFluxo, #chartReceitas, #chartCustos {
+  min-height:360px;
+}
+
+/* ===== Modal de detalhes ===== */
+#detailModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.modal-inner {
+  width: 94%;
+  max-width: 1200px;
+  max-height: 92vh;
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+  border-radius: 14px;
+  padding: 20px;
+  border:1px solid rgba(255,255,255,0.05);
+  overflow:auto;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  right: 16px;
+  top: 14px;
+  background: transparent;
+  border: none;
+  color: var(--gold);
+  font-size: 22px;
+  cursor: pointer;
+}
+.modal-tabs { display:flex; gap:10px; margin-bottom:14px; }
+.tab-btn {
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.04);
+  padding:8px 14px;
+  border-radius:8px;
+  color:var(--accent);
+  cursor:pointer;
+}
+.tab-btn.active { background:var(--gold); color:#0b0b0b; border-color:var(--gold) }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:12px }
+.stat { background:var(--card); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.02) }
+
+@media(max-width:1100px){
+  html,body{transform:scale(1);overflow:auto}
+  .container{flex-direction:column;padding:18px;gap:18px;height:auto}
+  .sidebar{width:auto;min-width:unset}
+}
 </style>
 </head>
 <body>
@@ -94,32 +241,39 @@ html,body{height:100%;width:100%;overflow:hidden;background:linear-gradient(180d
         <div><button id="btnNew" class="button">+ Novo</button></div>
       </div>
       <div class="controls" style="margin-top:10px">
-
-        <label>Pagamento no ato (%)</label>
-        <input id="pctAtAct" type="number" min="0" max="100" step="0.1" value="5">
-
-        <label>Entrada (%)</label>
-        <input id="entradaPct" type="number" min="0" max="100" step="0.1" value="30">
-        <label>Parcelas da entrada (nº)</label>
-        <input id="entradaMonths" type="number" min="1" step="1" value="6">
-
-        <label>Parcelas mensais do saldo (nº)</label>
-        <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
-
-        <label>Pagamento intermediário (%)</label>
-        <input id="pctIntermediate" type="number" min="0" max="100" step="0.1" value="10">
-        <label>Parcelas intermediárias (nº)</label>
-        <input id="intermediateMonths" type="number" min="1" step="1" value="3">
-
-        <label>Pagamento na entrega das chaves (%)</label>
-        <input id="pctDelivery" type="number" min="0" max="100" step="0.1" value="5">
+        <label>Busca</label><input id="search" type="text" placeholder="Pesquisar projeto...">
+        <label class="small">Mostrar</label>
+        <select id="showIndicators"><option value="all">Todos</option><option value="vgv">VGV</option><option value="irr">TIR</option></select>
 
         <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0">
 
+        <div><strong>Condições de Venda</strong></div>
+        <label>Desconto Pré-lançamento (%)</label>
+        <input id="discountPre" type="number" min="0" max="100" step="0.1" value="10">
+        <label>Meses Pré-lançamento</label>
+        <input id="preLaunchMonths" type="number" min="1" step="1" value="2">
+
+        <label>Desconto Lançamento (%)</label>
+        <input id="discountLaunch" type="number" min="0" max="100" step="0.1" value="5">
+        <label>Meses Lançamento</label>
+        <input id="launchMonths" type="number" min="1" step="1" value="3">
+
+        <label>Entrada (%)</label>
+        <input id="entradaPct" type="number" min="0" max="100" step="0.1" value="30">
+
+        <label>Parcelas da entrada (nº)</label>
+        <input id="entradaMonths" type="number" min="1" step="1" value="6">
+
+        <label>Parcelas do saldo (nº)</label>
+        <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
+
         <label>Correção INCC (%)</label>
         <input id="incc" type="number" min="0" step="0.001" value="0.0045">
+        
         <label>Correção IPCA (%)</label>
         <input id="ipca" type="number" min="0" step="0.001" value="0.005">
+
+        <div class="small" style="margin-top:6px">A entrada é paga em X parcelas a partir do mês da venda; o restante (saldo) é pago em Y parcelas subsequentes.</div>
 
         <div style="display:flex;gap:8px;margin-top:10px">
           <button id="btnExport" class="button">Exportar JSON</button>
@@ -241,34 +395,37 @@ let projects = [
 const PASSWORD="Investidor";
 const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 
-// ===== Configurações de venda =====
+// ===== Persistência das configurações de venda =====
 const cfgKey = 'aps_sale_cfg';
 let saleCfg = { 
-  pctAtAct:5, entradaPct:30, entradaMonths:6, parcelasRestantes:24,
-  pctIntermediate:10, intermediateMonths:3, pctDelivery:5,
-  incc:0.0045, ipca:0.005, applyProjection:true
+  discountPre:10, discountLaunch:5, parcelasRestantes:24, entradaPct:30, entradaMonths:6,
+  preLaunchMonths:2, launchMonths:3, incc:0.0045, ipca:0.005
 };
 
 function loadCfg(){
   const s = localStorage.getItem(cfgKey);
   if(s) try { saleCfg = Object.assign(saleCfg, JSON.parse(s)); } catch(e){}
-  ['pctAtAct','entradaPct','entradaMonths','parcelasRestantes','pctIntermediate','intermediateMonths','pctDelivery','incc','ipca'].forEach(id => {
-  const el = document.getElementById(id);
-  if(el) el.addEventListener('change', saveCfg);
-});
+  document.getElementById('discountPre').value = saleCfg.discountPre;
+  document.getElementById('discountLaunch').value = saleCfg.discountLaunch;
+  document.getElementById('parcelasRestantes').value = saleCfg.parcelasRestantes;
+  document.getElementById('entradaPct').value = saleCfg.entradaPct;
+  document.getElementById('entradaMonths').value = saleCfg.entradaMonths;
+  document.getElementById('preLaunchMonths').value = saleCfg.preLaunchMonths;
+  document.getElementById('launchMonths').value = saleCfg.launchMonths;
+  document.getElementById('incc').value = saleCfg.incc ?? 0.0045;
+  document.getElementById('ipca').value = saleCfg.ipca ?? 0.005;
 }
 
 function saveCfg(){
-  saleCfg.pctAtAct = Number(document.getElementById('pctAtAct').value) || 0;
+  saleCfg.discountPre = Number(document.getElementById('discountPre').value) || 0;
+  saleCfg.discountLaunch = Number(document.getElementById('discountLaunch').value) || 0;
+  saleCfg.parcelasRestantes = Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes').value) || 24));
   saleCfg.entradaPct = Math.min(100, Math.max(0, Number(document.getElementById('entradaPct').value) || 30));
   saleCfg.entradaMonths = Math.max(1, Math.floor(Number(document.getElementById('entradaMonths').value) || 6));
-  saleCfg.parcelasRestantes = Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes').value) || 24));
-  saleCfg.pctIntermediate = Number(document.getElementById('pctIntermediate').value) || 0;
-  saleCfg.intermediateMonths = Math.max(1, Math.floor(Number(document.getElementById('intermediateMonths').value) || 3));
-  saleCfg.pctDelivery = Number(document.getElementById('pctDelivery').value) || 0;
+  saleCfg.preLaunchMonths = Math.max(1, Math.floor(Number(document.getElementById('preLaunchMonths').value) || 2));
+  saleCfg.launchMonths = Math.max(1, Math.floor(Number(document.getElementById('launchMonths').value) || 3));
   saleCfg.incc = Number(document.getElementById('incc').value) || 0.0045;
   saleCfg.ipca = Number(document.getElementById('ipca').value) || 0.005;
-
   localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
   renderSidebar();
 }
@@ -311,65 +468,35 @@ function computeProject(p) {
   function ensureLen(arr, len){ while(arr.length < len) arr.push(0); }
 
   function addSalePayments(saleMonth, price_unit, targetArray, cfg, p) {
-  const incc = Number(cfg.incc || 0.0045);
-  const ipca = Number(cfg.ipca || 0.004);
+    const entradaPct = (cfg.entradaPct || 30)/100;
+    const entradaMonths = cfg.entradaMonths || 6;
+    const entradaTotal = price_unit*entradaPct;
+    const entradaParcel = entradaTotal/entradaMonths;
+    const restantePct = 1 - entradaPct;
+    const restanteTotal = price_unit*restantePct;
+    const restParc = cfg.parcelasRestantes || 24;
+    const incc = Number(cfg.incc || 0.0045);
+    const ipca = Number(cfg.ipca || 0.004);
 
-  function projCorr(mes){ 
-    if(mes < p.months) return Math.pow(1+incc, mes - saleMonth);
-    return Math.pow(1+incc, p.months - saleMonth) * Math.pow(1+ipca, mes - p.months);
-  }
+    function projCorr(mes){ 
+      if(mes<p.months) return Math.pow(1+incc, mes-saleMonth);
+      return Math.pow(1+incc,p.months-saleMonth)*Math.pow(1+ipca, mes-p.months);
+    }
 
-  const pctAtAct = (cfg.pctAtAct||0)/100;
-  if(pctAtAct>0){
-    ensureLen(targetArray, saleMonth+1);
-    targetArray[saleMonth] += price_unit * pctAtAct;
-  }
-
-  const entradaPct = (cfg.entradaPct||0)/100;
-  const entradaMonths = cfg.entradaMonths || 6;
-  if(entradaPct>0){
-    const entradaTotal = price_unit * entradaPct;
-    const entradaParcel = entradaTotal / entradaMonths;
     for(let m=0;m<entradaMonths;m++){
-      const idx = saleMonth + m;
+      const idx = saleMonth+m;
       ensureLen(targetArray, idx+1);
       targetArray[idx] += entradaParcel;
     }
-  }
-
-  const restantePct = 1 - pctAtAct - entradaPct - (cfg.pctIntermediate||0)/100 - (cfg.pctDelivery||0)/100;
-  const restanteTotal = price_unit * restantePct;
-  const mensalParc = restanteTotal / cfg.parcelasRestantes;
-  for(let m=0;m<cfg.parcelasRestantes;m++){
-    const idx = saleMonth + entradaMonths + m;
-    ensureLen(targetArray, idx+1);
-    targetArray[idx] += mensalParc;
-  }
-
-  const pctIntermediate = (cfg.pctIntermediate||0)/100;
-  const intermediateMonths = cfg.intermediateMonths || 3;
-  if(pctIntermediate>0){
-    const intermTotal = price_unit * pctIntermediate;
-    const intermParcel = intermTotal / intermediateMonths;
-    const startMonth = saleMonth + entradaMonths + cfg.parcelasRestantes;
-    for(let m=0;m<intermediateMonths;m++){
-      const idx = startMonth + m;
+    for(let m=0;m<restParc;m++){
+      const idx = saleMonth+entradaMonths+m;
       ensureLen(targetArray, idx+1);
-      targetArray[idx] += intermParcel;
+      targetArray[idx] += restanteTotal/restParc;
+    }
+    if(cfg.applyProjection===true){
+      for(let i=0;i<targetArray.length;i++) targetArray[i]*=projCorr(i);
     }
   }
-
-  const pctDelivery = (cfg.pctDelivery||0)/100;
-  if(pctDelivery>0){
-    const idx = p.months - 1;
-    ensureLen(targetArray, idx+1);
-    targetArray[idx] += price_unit * pctDelivery;
-  }
-
-  if(cfg.applyProjection===true){
-    for(let i=0;i<targetArray.length;i++) targetArray[i]*=projCorr(i);
-  }
-}
 
   function distributeUnits(units, startMonth, receiptsArr, type, periodMonths){
     if(units<=0) return;
