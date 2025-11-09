@@ -1,1 +1,198 @@
-/* styles embedded in index.html; external CSS placeholder */
+/* ================================
+   STYLE.CSS - versão otimizada
+   ================================ */
+
+/* RESET BÁSICO */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+}
+
+html, body {
+  height: 100%;
+  background: #f5f5f7;
+  color: #1a1a1a;
+}
+
+/* LAYOUT GERAL */
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+header {
+  padding: 20px;
+  background: #1e1e1e;
+  color: white;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  padding: 20px;
+  height: calc(100% - 80px);
+}
+
+/* SIDEBAR */
+.sidebar {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow-y: auto;
+}
+
+.sidebar h2 {
+  margin-bottom: 15px;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.config-block {
+  margin-bottom: 25px;
+}
+
+.config-block label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.config-block input {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  transition: border 0.2s;
+}
+
+.config-block input:focus {
+  outline: none;
+  border-color: #0070f3;
+}
+
+#saveCfgBtn {
+  width: 100%;
+  padding: 12px;
+  background: #0070f3;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#saveCfgBtn:hover {
+  background: #005ad1;
+}
+
+/* ÁREA PRINCIPAL */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow: hidden;
+}
+
+/* TABELA */
+.table-container {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  overflow-y: auto;
+  max-height: 50vh;
+}
+
+#salesTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#salesTable th,
+#salesTable td {
+  padding: 10px;
+  border-bottom: 1px solid #e5e5e5;
+  text-align: left;
+  font-size: 14px;
+}
+
+#salesTable th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+#salesTable tr:hover td {
+  background: #f0f8ff;
+}
+
+/* RESULTADOS */
+.result-blocks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+}
+
+.result-item {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  font-size: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* GRÁFICO */
+#chartContainer {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  height: 300px;
+}
+
+#chartCanvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* SCROLLBAR BONITA */
+.sidebar::-webkit-scrollbar,
+.table-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb {
+  background: #c0c0c0;
+  border-radius: 4px;
+}
+
+/* RESPONSIVIDADE */
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    order: 2;
+  }
+
+  .main-content {
+    order: 1;
+  }
+}
