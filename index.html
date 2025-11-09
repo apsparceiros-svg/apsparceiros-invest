@@ -1,191 +1,260 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>APSPARCEIROS Invest — Dashboard Premium</title>
-
-<!-- Fonts & Chart.js -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>APSPARCEIROS Invest — Dashboard Premium (Tela Cheia)</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <style>
-  /* ===== Theme tokens ===== */
-  :root{
-    --bg:#070707;
-    --panel:#0f0f0f;
-    --muted:#9e9e9e;
-    --gold:#c9a84b;
-    --card:#121212;
-    --accent:#e6e6e6;
-    --glass: rgba(255,255,255,0.02);
-    --radius:12px;
-    --max-width:1280px;
-  }
-  /* Theme variations applied via body class */
-  body.theme-royal { --bg:#070707; --card:#121212; --accent:#c9a84b; --text:#ffffff; }
-  body.theme-glass { --bg:#0f0f12; --card:rgba(255,255,255,0.03); --accent:#e6e6e6; --text:#ffffff; }
-  body.theme-titanium { --bg:#0d0f12; --card:#17181b; --accent:#62e0ff; --text:#ffffff; }
+:root{
+  --bg:#070707;
+  --panel:#0f0f0f;
+  --muted:#9e9e9e;
+  --gold:#c9a84b;
+  --card:#121212;
+  --accent:#e6e6e6;
+}
 
-  /* ===== Reset & base ===== */
-  *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:var(--bg);-webkit-font-smoothing:antialiased;font-family:Inter,system-ui,Arial;color:var(--text, #fff);font-size:15px}
-  a{color:var(--accent);text-decoration:none}
-  button{font-family:inherit}
+/* ===== Ajustes gerais ===== */
+*{box-sizing:border-box;font-family:Inter,system-ui,Arial;color:var(--accent);margin:0;padding:0}
+html,body{
+  height:100%;
+  width:100%;
+  overflow:hidden; /* remove barras de rolagem */
+  background:linear-gradient(180deg,#040404,#0a0a0a);
+  -webkit-font-smoothing:antialiased;
+  font-size:17px;
+  transform-origin: top left;
+  transform: scale(1.00);
+}
 
-  /* ===== App layout ===== */
-  .app {
-    max-width:var(--max-width);
-    margin:18px auto;
-    display:flex;
-    gap:20px;
-    padding:18px;
-    align-items:flex-start;
-  }
+/* ===== Cabeçalho ===== */
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:20px 28px;
+  border-bottom:1px solid rgba(255,255,255,0.04);
+}
+.brand{font-weight:800;color:var(--gold);letter-spacing:0.6px;font-size:20px}
+.header .meta{color:var(--muted);font-size:14px}
 
-  header.header{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
+/* ===== Container full screen ===== */
+.container{
+  display:flex;
+  height:calc(100vh - 72px);
+  width:100%;
+  gap:28px;
+  padding:28px;
+  overflow:hidden;
+}
+.sidebar{
+  width:22%;
+  min-width:300px;
+  background:linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));
+  border-radius:12px;
+  padding:18px;
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+.content{
+  flex:1;
+  background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));
+  border-radius:12px;
+  padding:22px;
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+.section-title{font-weight:700;color:var(--gold);margin-bottom:10px}
+.small{font-size:13px;color:var(--muted)}
+
+/* ===== Cartões e inputs ===== */
+.project-card{
+  background:var(--card);
+  padding:14px;
+  border-radius:10px;
+  margin-bottom:14px;
+  display:flex;
+  gap:12px;
+  flex-direction:column;
+  border:1px solid rgba(255,255,255,0.03);
+  cursor:pointer;
+}
+.project-card .info{flex:1;width:100%}
+.kpi{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.kpi .item{
+  background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));
+  padding:10px;
+  border-radius:8px;
+  min-width:90px;
+  text-align:center
+}
+.kpi .value{font-weight:700;color:var(--gold);margin-top:6px}
+
+.controls label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
+.controls input[type=text],
+.controls input[type=number],
+.project-card input[type=text],
+.project-card input[type=number]{
+    background-color:#1e1e1e;
+    color:#fff;
+    border:1px solid #c9a84b;
+    padding:8px;
+    border-radius:6px;
     width:100%;
-    padding:16px 20px;
-    background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
-    border-radius:var(--radius);
-    border:1px solid rgba(255,255,255,0.03);
-    margin-bottom:12px;
-  }
-  .brand{font-weight:800;color:var(--accent);letter-spacing:0.6px;font-size:20px}
-  .meta{color:var(--muted);font-size:14px}
+    margin-bottom:6px;
+}
+.project-card input:focus{outline:2px solid #c9a84b;background-color:#292929}
 
-  /* ===== Sidebar ===== */
-  .sidebar{
-    width:320px;
-    min-width:260px;
-    background:linear-gradient(180deg,var(--glass),rgba(255,255,255,0.006));
-    border-radius:var(--radius);
-    padding:18px;
-    border:1px solid rgba(255,255,255,0.03);
-    height:calc(100vh - 120px);
-    overflow:auto;
-  }
-  .section-title{font-weight:700;color:var(--accent);margin-bottom:8px}
-  .small{font-size:13px;color:var(--muted)}
-  .controls label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
-  .controls input[type=text], .controls input[type=number], .controls select{
-    background-color:#151515;color:#fff;border:1px solid rgba(255,255,255,0.04);
-    padding:8px;border-radius:8px;width:100%;margin-top:6px;
-  }
-  .controls .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.button{
+  background:var(--gold);
+  color:#0b0b0b;
+  border:none;
+  padding:10px 14px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:700;
+}
+.button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent)}
 
-  .button{background:var(--accent);color:#0b0b0b;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
-  .button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
+.card{
+  background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));
+  padding:14px;
+  border-radius:10px;
+  margin-bottom:14px;
+  border:1px solid rgba(255,255,255,0.03)
+}
 
-  /* ===== Content ===== */
-  .content{
-    flex:1;
-    min-width:0;
-    background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));
-    border-radius:var(--radius);
-    padding:20px;
-    border:1px solid rgba(255,255,255,0.03);
-    height:calc(100vh - 120px);
-    overflow:auto;
-  }
+/* ===== Tooltip ===== */
+.tooltip{position:relative;display:inline-block}
+.tooltip .tt{
+  visibility:hidden;
+  width:260px;
+  background:#0c0c0c;
+  color:var(--muted);
+  text-align:left;
+  border-radius:6px;
+  padding:10px;
+  position:absolute;
+  z-index:10;
+  bottom:130%;
+  left:50%;
+  transform:translateX(-50%);
+  opacity:0;
+  transition:opacity .12s;
+}
+.tooltip:hover .tt{visibility:visible;opacity:1}
 
-  .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
-  .kpis{display:flex;gap:12px;flex-wrap:wrap}
-  .kpi{background:var(--card);padding:12px;border-radius:10px;min-width:160px}
-  .kpi .small{color:var(--muted)}
-  .kpi .value{font-weight:800;color:var(--accent);margin-top:6px}
+/* ===== Gráficos maiores ===== */
+#chartPortfolio, #chartFluxo, #chartReceitas, #chartCustos {
+  min-height:360px;
+}
 
-  /* cards & project list */
-  .card{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:14px;border-radius:10px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.03)}
-  .project-card{background:var(--card);padding:12px;border-radius:8px;margin-bottom:12px;border:1px solid rgba(255,255,255,0.02);cursor:pointer}
-  .project-card input{background:#171717;border:1px solid rgba(255,255,255,0.03);padding:8px;border-radius:6px;color:#fff}
+/* ===== Modal de detalhes ===== */
+#detailModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.9);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.modal-inner {
+  width: 94%;
+  max-width: 1200px;
+  max-height: 92vh;
+  background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+  border-radius: 14px;
+  padding: 20px;
+  border:1px solid rgba(255,255,255,0.05);
+  overflow:auto;
+  position: relative;
+}
+.modal-close {
+  position: absolute;
+  right: 16px;
+  top: 14px;
+  background: transparent;
+  border: none;
+  color: var(--gold);
+  font-size: 22px;
+  cursor: pointer;
+}
+.modal-tabs { display:flex; gap:10px; margin-bottom:14px; }
+.tab-btn {
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.04);
+  padding:8px 14px;
+  border-radius:8px;
+  color:var(--accent);
+  cursor:pointer;
+}
+.tab-btn.active { background:var(--gold); color:#0b0b0b; border-color:var(--gold) }
+.stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px; margin-top:12px }
+.stat { background:var(--card); padding:12px; border-radius:8px; border:1px solid rgba(255,255,255,0.02) }
 
-  /* modal */
-  #detailModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:200}
-  .modal-inner{width:94%;max-width:1200px;max-height:92vh;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,0.05);overflow:auto;position:relative}
-  .modal-close{position:absolute;right:16px;top:14px;background:transparent;border:none;color:var(--accent);font-size:20px;cursor:pointer}
-
-  .modal-tabs{display:flex;gap:8px;margin-bottom:12px}
-  .tab-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px;color:var(--text);cursor:pointer}
-  .tab-btn.active{background:var(--accent);color:#0b0b0b;border-color:var(--accent)}
-
-  /* util panels */
-  #themeSelector{position:fixed;top:10px;right:10px;padding:8px;background:var(--card);color:var(--text);border-radius:8px;border:1px solid rgba(255,255,255,0.04);z-index:9999}
-  #utilityPanel{position:fixed;bottom:10px;right:10px;background:var(--card);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);display:flex;gap:10px;z-index:9999}
-  #reportPanel{position:fixed;bottom:70px;right:10px;background:var(--card);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);display:flex;gap:10px;z-index:9999}
-
-  /* responsive */
-  @media(max-width:1100px){
-    .app{flex-direction:column;padding:12px}
-    .sidebar{width:auto;height:auto;order:2}
-    .content{order:1;height:auto}
-  }
-
-  /* small helpers */
-  .muted{color:var(--muted)}
-  .right{margin-left:auto}
-  .tiny{font-size:12px;color:var(--muted)}
-  .tooltip{position:relative;display:inline-block}
-  .tooltip .tt{visibility:hidden;width:240px;background:#0c0c0c;color:var(--muted);text-align:left;border-radius:6px;padding:8px;position:absolute;z-index:10;bottom:120%;left:50%;transform:translateX(-50%);opacity:0;transition:opacity .12s}
-  .tooltip:hover .tt{visibility:visible;opacity:1}
-  .fade-in{animation:fadeIn .28s ease}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1100px){
+  html,body{transform:scale(1);overflow:auto}
+  .container{flex-direction:column;padding:18px;gap:18px;height:auto}
+  .sidebar{width:auto;min-width:unset}
+}
 </style>
 </head>
-<body class="theme-royal">
+<body>
 
-<div id="themeSelector">
-  Tema:
-  <select id="themeSelect" aria-label="Selecionar tema">
-    <option value="royal">Royal Gold</option>
-    <option value="glass">Glass Neo</option>
-    <option value="titanium">Titanium Pro</option>
-  </select>
+<header class="header">
+  <div class="brand">APSPARCEIROS Invest</div>
+  <div class="meta">Dashboard · Portfólio · Proteção</div>
+</header>
+
+<!-- Login Modal -->
+<div id="loginModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:50">
+  <div style="background:#0b0b0b;padding:28px;border-radius:12px;width:420px;border:1px solid rgba(255,255,255,0.05);box-shadow:0 0 15px rgba(201,168,75,0.4);transition:all 0.3s ease" id="loginBox">
+    <h2 style="margin-top:0;color:var(--gold);text-align:center">Acesso Premium</h2>
+    <p class="small" style="margin-bottom:16px;text-align:center;color:var(--muted)">Digite a senha para desbloquear o painel completo</p>
+    <input id="pwd" type="password" placeholder="Senha" style="width:100%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--accent);transition:border 0.2s, box-shadow 0.2s">
+    <div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">
+      <button id="btnLogin" class="button" style="flex:1">Entrar</button>
+    </div>
+    <p class="small" style="margin-top:12px;color:var(--muted);text-align:center">
+  Esqueceu a senha? 
+  <a href="https://wa.me/5512997036301?text=Olá!%20Preciso%20de%20ajuda%20para%20acessar%20o%20painel%20APSPARCEIROS%20Invest."
+     target="_blank" 
+     style="color:var(--gold);text-decoration:none;font-weight:700">
+    Entre em contato!
+  </a>
+</p>
+  </div>
 </div>
 
-<div class="app fade-in" role="application" aria-label="Painel APSPARCEIROS Invest">
-  <header class="header" role="banner">
-    <div class="brand">APSPARCEIROS Invest</div>
-    <div class="meta">Dashboard · Portfólio · Proteção</div>
-  </header>
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar" role="complementary" aria-label="Controles">
+<div class="container" id="app" style="display:none">
+  <aside class="sidebar">
     <div class="section-title">Portfólio</div>
-    <div id="projectsList" aria-live="polite"></div>
+    <div id="projectsList"></div>
 
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><strong>Filtrar</strong><div class="tiny muted">por indicador</div></div>
+        <div><strong>Filtrar</strong><div class="small">por indicador</div></div>
         <div><button id="btnNew" class="button">+ Novo</button></div>
       </div>
+      <div class="controls" style="margin-top:10px">
+        <label>Busca</label><input id="search" type="text" placeholder="Pesquisar projeto...">
+        <label class="small">Mostrar</label>
+        <select id="showIndicators"><option value="all">Todos</option><option value="vgv">VGV</option><option value="irr">TIR</option></select>
 
-      <div class="controls" style="margin-top:12px">
-        <label for="search">Busca</label>
-        <input id="search" type="text" placeholder="Pesquisar projeto..." aria-label="Pesquisar projetos">
-
-        <label class="tiny">Mostrar</label>
-        <select id="showIndicators" aria-label="Filtrar indicadores">
-          <option value="all">Todos</option>
-          <option value="vgv">VGV</option>
-          <option value="irr">TIR</option>
-        </select>
-
-        <hr>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0">
 
         <div><strong>Condições de Venda</strong></div>
         <label>Desconto Pré-lançamento (%)</label>
         <input id="discountPre" type="number" min="0" max="100" step="0.1" value="10">
-
         <label>Meses Pré-lançamento</label>
         <input id="preLaunchMonths" type="number" min="1" step="1" value="2">
 
         <label>Desconto Lançamento (%)</label>
         <input id="discountLaunch" type="number" min="0" max="100" step="0.1" value="5">
-
         <label>Meses Lançamento</label>
         <input id="launchMonths" type="number" min="1" step="1" value="3">
 
@@ -198,85 +267,62 @@
         <label>Parcelas do saldo (nº)</label>
         <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
 
-        <label>Correção INCC (mensal)</label>
-        <input id="incc" type="number" min="0" step="0.0001" value="0.0045">
+        <label>Correção INCC (%)</label>
+        <input id="incc" type="number" min="0" step="0.001" value="0.0045">
+        
+        <label>Correção IPCA (%)</label>
+        <input id="ipca" type="number" min="0" step="0.001" value="0.005">
 
-        <label>Correção IPCA (mensal)</label>
-        <input id="ipca" type="number" min="0" step="0.0001" value="0.005">
-
-        <div class="tiny muted" style="margin-top:6px">A entrada é paga em X parcelas a partir do mês da venda; o restante (saldo) é pago em Y parcelas subsequentes.</div>
-
-        <hr style="margin-top:10px">
-
-        <div><strong>Novas Modalidades</strong></div>
-        <label>Pagamento à vista no ato (%)</label>
-        <input id="payUpfrontPct" type="number" min="0" max="100" step="0.1" value="0">
-
-        <label>Pagamento intermediário (%)</label>
-        <input id="payIntermediatePct" type="number" min="0" max="100" step="0.1" value="0">
-
-        <label>Nº de parcelas intermediárias</label>
-        <input id="intermediateMonths" type="number" min="1" step="1" value="1">
-
-        <label>Pagamento na entrega das chaves (%)</label>
-        <input id="payOnDeliveryPct" type="number" min="0" max="100" step="0.1" value="0">
-
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button id="btnExport" class="button">Exportar JSON</button>
-          <button id="btnDownloadCsv" class="button ghost">Download CSV</button>
-        </div>
+        <div class="small" style="margin-top:6px">A entrada é paga em X parcelas a partir do mês da venda; o restante (saldo) é pago em Y parcelas subsequentes.</div>
 
         <div style="display:flex;gap:8px;margin-top:10px">
-          <button id="btnPublish" class="button">Salvar alterações</button>
+          <button id="btnExport" class="button">Exportar JSON</button>
           <button id="btnReset" class="button ghost">Restaurar</button>
         </div>
       </div>
     </div>
-
-    <div class="footer tiny muted" style="margin-top:8px">APSPARCEIROS Invest · Template profissional</div>
+    <div class="footer small">APSPARCEIROS Invest · Template editável</div>
   </aside>
 
-  <!-- MAIN CONTENT -->
-  <main class="content" role="main">
-    <div class="topbar">
-      <div>
-        <h2 id="panelTitle" style="margin:0">Dashboard</h2>
-        <div class="tiny muted">Edite os projetos e clique em salvar</div>
+  <main class="content">
+    <div style="display:flex;gap:12px;align-items:center">
+      <div style="flex:1">
+        <h2 id="panelTitle">Dashboard</h2>
+        <div class="small">Edite os projetos e clique em salvar</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <div class="tiny muted right">VGV total</div>
-        <div id="totalVgv" class="kpi value" style="min-width:160px;text-align:right">R$ 0</div>
+        <button id="btnDownloadCsv" class="button ghost">Download CSV</button>
+        <button id="btnPublish" class="button">Salvar alterações</button>
       </div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 360px;gap:18px">
+    <div style="display:grid;grid-template-columns:1fr 360px;gap:18px;margin-top:12px">
       <section>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div><strong>Visão Geral do Portfólio</strong><div class="tiny muted">Resumo consolidado</div></div>
+            <div><strong>Visão Geral do Portfólio</strong><div class="small">Resumo consolidado</div></div>
             <div style="text-align:right">
-              <div class="tiny muted">VGV total</div>
-              <div style="font-weight:800;color:var(--accent)" id="panelVgv">R$ 0</div>
+              <div class="small">VGV total</div>
+              <div style="font-weight:800;color:var(--gold)" id="totalVgv">R$ 0</div>
             </div>
           </div>
-
           <div style="display:flex;gap:12px;margin-top:12px">
             <div style="flex:1">
-              <div style="height:360px;">
-                <canvas id="chartPortfolio" style="width:100%;height:100%"></canvas>
+              <div style="height:auto; min-height:120px;">
+                <canvas id="chartPortfolio" style="width:100%;height:auto;"></canvas>
               </div>
             </div>
-
             <div style="width:220px">
-              <div class="kpis">
-                <div class="kpi"><div class="small">ROI médio</div><div id="avgRoi" class="value">--</div></div>
-                <div class="kpi"><div class="small">TIR média</div><div id="avgIrr" class="value">--</div></div>
+              <div class="kpi">
+                <div class="item"><div class="small">ROI médio</div><div class="value" id="avgRoi">--</div></div>
+                <div class="item"><div class="small">TIR média</div><div class="value" id="avgIrr">--</div></div>
               </div>
-              <div style="margin-top:10px" class="tiny muted">Clique num projeto no menu lateral para ver o fluxo detalhado.</div>
+              <div style="margin-top:10px" class="small">Clique num projeto no menu lateral para ver detalhes.</div>
             </div>
           </div>
         </div>
 
+        <!-- O detailArea original foi mantido, mas ficará oculto (não usado) -->
         <div id="detailArea" style="display:none"></div>
       </section>
 
@@ -293,46 +339,31 @@
 
         <div class="card">
           <div class="section-title">Cap Table (exemplo)</div>
-          <div class="tiny muted">Incorporador: 50%<br>Terrenista: 20%<br>Investidores: 30%</div>
+          <div class="small">Incorporador: 50%<br>Terrenista: 20%<br>Investidores: 30%</div>
         </div>
       </aside>
     </div>
   </main>
 </div>
 
-<!-- LOGIN MODAL -->
-<div id="loginModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:500">
-  <div id="loginBox" style="background:#0b0b0b;padding:28px;border-radius:12px;width:420px;border:1px solid rgba(255,255,255,0.05);box-shadow:0 0 15px rgba(201,168,75,0.4)">
-    <h2 style="margin-top:0;color:var(--accent);text-align:center">Acesso Premium</h2>
-    <p class="tiny muted" style="margin-bottom:16px;text-align:center">Digite a senha para desbloquear o painel completo</p>
-    <input id="pwd" type="password" placeholder="Senha" aria-label="Senha" style="width:100%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--text);margin-bottom:10px">
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <button id="btnLogin" class="button" style="flex:1">Entrar</button>
+<!-- ================= Modal de detalhes (mantém tema escuro/dourado) ================= -->
+<div id="detailModal">
+  <div class="modal-inner" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-header" style="display:flex;flex-direction:column;align-items:center;gap:6px">
+  <div style="width:100%;display:flex;justify-content:space-between;align-items:center">
+    <div>
+      <h3 id="modalTitle" style="margin:0;color:var(--gold)"></h3>
+      <div class="small" id="modalCity" style="margin-top:4px;color:var(--muted)"></div>
     </div>
-    <p class="tiny muted" style="margin-top:12px;text-align:center">
-      Esqueceu a senha?
-      <a href="https://wa.me/5512997036301?text=Olá!%20Preciso%20de%20ajuda%20para%20acessar%20o%20painel%20APSPARCEIROS%20Invest." target="_blank" rel="noopener">Entre em contato</a>
-    </p>
+    <button class="modal-close" id="closeModal" title="Fechar">✕</button>
+  </div>
+  <div style="width:100%;display:flex;justify-content:center;align-items:center;gap:6px">
+    <div class="small">VGV</div>
+    <div style="font-weight:800;color:var(--gold)" id="modalVgv"></div>
   </div>
 </div>
 
-<!-- DETAIL MODAL -->
-<div id="detailModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-  <div class="modal-inner">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <h3 id="modalTitle" style="margin:0;color:var(--accent)"></h3>
-        <div id="modalCity" class="tiny muted" style="margin-top:4px"></div>
-      </div>
-      <button class="modal-close" id="closeModal" aria-label="Fechar modal">✕</button>
-    </div>
-
-    <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:10px">
-      <div class="tiny muted">VGV</div>
-      <div id="modalVgv" style="font-weight:800;color:var(--accent)"></div>
-    </div>
-
-    <div class="modal-tabs" id="modalTabs" style="margin-top:12px">
+    <div class="modal-tabs" id="modalTabs">
       <button class="tab-btn active" data-tab="fluxo">Fluxo Líquido</button>
       <button class="tab-btn" data-tab="receitas">Receitas</button>
       <button class="tab-btn" data-tab="custos">Custos</button>
@@ -340,38 +371,22 @@
 
     <div class="modal-charts">
       <div class="canvas-wrap" id="wrapFluxo" style="display:block">
-        <canvas id="chartFluxo" style="width:100%;height:240px"></canvas>
+        <canvas id="chartFluxo" style="width:100%;height:240px;"></canvas>
       </div>
       <div class="canvas-wrap" id="wrapReceitas" style="display:none">
-        <canvas id="chartReceitas" style="width:100%;height:240px"></canvas>
+        <canvas id="chartReceitas" style="width:100%;height:240px;"></canvas>
       </div>
       <div class="canvas-wrap" id="wrapCustos" style="display:none">
-        <canvas id="chartCustos" style="width:100%;height:240px"></canvas>
+        <canvas id="chartCustos" style="width:100%;height:240px;"></canvas>
       </div>
-      <div class="stats-grid" id="modalStats" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px"></div>
+
+      <div class="stats-grid" id="modalStats" style="margin-top:10px"></div>
     </div>
   </div>
 </div>
 
-<!-- Utility & Report Panels -->
-<div id="utilityPanel">
-  <button id="btnExportCSV" style="padding:6px 10px;background:var(--accent);color:#000;font-weight:bold;border:none;border-radius:4px;cursor:pointer;">Exportar CSV</button>
-  <button id="btnPrint" style="padding:6px 10px;background:var(--accent);color:#000;font-weight:bold;border:none;border-radius:4px;cursor:pointer;">Imprimir</button>
-  <button id="btnResetLocal" style="padding:6px 10px;background:var(--accent);color:#000;font-weight:bold;border:none;border-radius:4px;cursor:pointer;">Resetar</button>
-</div>
-
-<div id="reportPanel">
-  <button id="btnGenerateReport" style="padding:6px 10px;background:var(--accent);color:#000;font-weight:bold;border:none;border-radius:4px;cursor:pointer;">Gerar Relatório Premium</button>
-</div>
-
 <script>
-/* ===================================================================
-   Arquivo final: funcionalidades completas
-   =================================================================== */
-
-/* -------------------------
-   Initial data (preserved)
-   ------------------------- */
+// ===== Dados iniciais (mantidos exatamente como antes) =====
 let projects = [
   {id:1,name:"Residencial Ubatuba Premium",city:"Ubatuba - SP",units:30,area:80,price_m2:7000,cost_m2:2800,months:24,pre_launch_sales:2,launch_sales:4,monthly_sales:3},
   {id:2,name:"Residencial Caraguá Vista",city:"Caraguá - SP",units:24,area:75,price_m2:6500,cost_m2:2600,months:22,pre_launch_sales:1,launch_sales:3,monthly_sales:3},
@@ -380,72 +395,42 @@ let projects = [
 const PASSWORD="Investidor";
 const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 
-/* -------------------------
-   Sale configuration + persistence
-   ------------------------- */
-const cfgKey = 'aps_sale_cfg_v3';
-let saleCfg = {
+// ===== Persistência das configurações de venda =====
+const cfgKey = 'aps_sale_cfg';
+let saleCfg = { 
   discountPre:10, discountLaunch:5, parcelasRestantes:24, entradaPct:30, entradaMonths:6,
-  preLaunchMonths:2, launchMonths:3, incc:0.0045, ipca:0.005,
-  payUpfrontPct:0, payIntermediatePct:0, intermediateMonths:1, payOnDeliveryPct:0,
-  applyProjection:false
+  preLaunchMonths:2, launchMonths:3, incc:0.0045, ipca:0.005
 };
 
 function loadCfg(){
   const s = localStorage.getItem(cfgKey);
   if(s) try { saleCfg = Object.assign(saleCfg, JSON.parse(s)); } catch(e){}
-  const ids = ['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths','preLaunchMonths','launchMonths','incc','ipca','payUpfrontPct','payIntermediatePct','intermediateMonths','payOnDeliveryPct'];
-  ids.forEach(id=>{
-    const el=document.getElementById(id);
-    if(el && saleCfg[id] !== undefined) el.value = saleCfg[id];
-  });
-  renderSidebar();
+  document.getElementById('discountPre').value = saleCfg.discountPre;
+  document.getElementById('discountLaunch').value = saleCfg.discountLaunch;
+  document.getElementById('parcelasRestantes').value = saleCfg.parcelasRestantes;
+  document.getElementById('entradaPct').value = saleCfg.entradaPct;
+  document.getElementById('entradaMonths').value = saleCfg.entradaMonths;
+  document.getElementById('preLaunchMonths').value = saleCfg.preLaunchMonths;
+  document.getElementById('launchMonths').value = saleCfg.launchMonths;
+  document.getElementById('incc').value = saleCfg.incc ?? 0.0045;
+  document.getElementById('ipca').value = saleCfg.ipca ?? 0.005;
 }
 
 function saveCfg(){
-  saleCfg.discountPre = clampPercent(Number(document.getElementById('discountPre').value));
-  saleCfg.discountLaunch = clampPercent(Number(document.getElementById('discountLaunch').value));
+  saleCfg.discountPre = Number(document.getElementById('discountPre').value) || 0;
+  saleCfg.discountLaunch = Number(document.getElementById('discountLaunch').value) || 0;
   saleCfg.parcelasRestantes = Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes').value) || 24));
-  saleCfg.entradaPct = clampPercent(Number(document.getElementById('entradaPct').value));
+  saleCfg.entradaPct = Math.min(100, Math.max(0, Number(document.getElementById('entradaPct').value) || 30));
   saleCfg.entradaMonths = Math.max(1, Math.floor(Number(document.getElementById('entradaMonths').value) || 6));
   saleCfg.preLaunchMonths = Math.max(1, Math.floor(Number(document.getElementById('preLaunchMonths').value) || 2));
   saleCfg.launchMonths = Math.max(1, Math.floor(Number(document.getElementById('launchMonths').value) || 3));
-  saleCfg.incc = parseFloatValue(document.getElementById('incc').value, 0.0045);
-  saleCfg.ipca = parseFloatValue(document.getElementById('ipca').value, 0.005);
-  saleCfg.payUpfrontPct = clampPercent(Number(document.getElementById('payUpfrontPct').value));
-  saleCfg.payIntermediatePct = clampPercent(Number(document.getElementById('payIntermediatePct').value));
-  saleCfg.intermediateMonths = Math.max(1, Math.floor(Number(document.getElementById('intermediateMonths').value) || 1));
-  saleCfg.payOnDeliveryPct = clampPercent(Number(document.getElementById('payOnDeliveryPct').value));
-
-  const totalPct = saleCfg.entradaPct + saleCfg.payUpfrontPct + saleCfg.payIntermediatePct + saleCfg.payOnDeliveryPct;
-  if(totalPct > 100){
-    const factor = 100 / totalPct;
-    saleCfg.entradaPct = round2(saleCfg.entradaPct * factor);
-    saleCfg.payUpfrontPct = round2(saleCfg.payUpfrontPct * factor);
-    saleCfg.payIntermediatePct = round2(saleCfg.payIntermediatePct * factor);
-    saleCfg.payOnDeliveryPct = round2(saleCfg.payOnDeliveryPct * factor);
-    ['entradaPct','payUpfrontPct','payIntermediatePct','payOnDeliveryPct'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.value = saleCfg[id];
-    });
-  }
-
+  saleCfg.incc = Number(document.getElementById('incc').value) || 0.0045;
+  saleCfg.ipca = Number(document.getElementById('ipca').value) || 0.005;
   localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
   renderSidebar();
-  updatePortfolioChart();
 }
 
-/* -------------------------
-   Utility functions
-   ------------------------- */
-function clampPercent(v){ return Math.max(0, Math.min(100, isNaN(v)?0:v)); }
-function round2(v){ return Math.round((v+Number.EPSILON)*100)/100; }
-function parseFloatValue(v, fallback=0){ const n=parseFloat(v); return isNaN(n)?fallback:n; }
-function fmt(v){ return isFinite(v) ? v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}) : '--'; }
-
-/* -------------------------
-   Financial functions (unchanged core)
-   ------------------------- */
+// ===== Funções financeiras (mantidas) =====
 function irr(values, guess = 0.01) {
   const eps = 1e-7;
   const maxIter = 1000;
@@ -470,9 +455,7 @@ function irr(values, guess = 0.01) {
   return rate;
 }
 
-/* -------------------------
-   Core computeProject (enhanced)
-   ------------------------- */
+// ===== Função principal de cálculo do projeto =====
 function computeProject(p) {
   const cfg = saleCfg;
   const months = p.months;
@@ -487,17 +470,9 @@ function computeProject(p) {
   function addSalePayments(saleMonth, price_unit, targetArray, cfg, p) {
     const entradaPct = (cfg.entradaPct || 30)/100;
     const entradaMonths = cfg.entradaMonths || 6;
-    const payUpfrontPct = (cfg.payUpfrontPct || 0)/100;
-    const payIntermediatePct = (cfg.payIntermediatePct || 0)/100;
-    const intermediateMonths = cfg.intermediateMonths || 1;
-    const payOnDeliveryPct = (cfg.payOnDeliveryPct || 0)/100;
-
-    let restantePct = 1 - entradaPct - payUpfrontPct - payIntermediatePct - payOnDeliveryPct;
-    if(restantePct < 0) restantePct = 0;
-
     const entradaTotal = price_unit*entradaPct;
     const entradaParcel = entradaTotal/entradaMonths;
-
+    const restantePct = 1 - entradaPct;
     const restanteTotal = price_unit*restantePct;
     const restParc = cfg.parcelasRestantes || 24;
     const incc = Number(cfg.incc || 0.0045);
@@ -508,45 +483,16 @@ function computeProject(p) {
       return Math.pow(1+incc,p.months-saleMonth)*Math.pow(1+ipca, mes-p.months);
     }
 
-    // Upfront at sale month
-    if(payUpfrontPct > 0){
-      const idx = saleMonth;
-      ensureLen(targetArray, idx+1);
-      targetArray[idx] += price_unit * payUpfrontPct;
-    }
-
-    // Entrada parcelada
     for(let m=0;m<entradaMonths;m++){
       const idx = saleMonth+m;
       ensureLen(targetArray, idx+1);
       targetArray[idx] += entradaParcel;
     }
-
-    // Intermediário
-    if(payIntermediatePct > 0){
-      const intermediateTotal = price_unit * payIntermediatePct;
-      const intermediateParcel = intermediateTotal / intermediateMonths;
-      for(let m=0;m<intermediateMonths;m++){
-        const idx = saleMonth + entradaMonths + m;
-        ensureLen(targetArray, idx+1);
-        targetArray[idx] += intermediateParcel;
-      }
-    }
-
-    // Saldo parcelado
     for(let m=0;m<restParc;m++){
-      const idx = saleMonth + entradaMonths + (payIntermediatePct>0 ? intermediateMonths : 0) + m;
+      const idx = saleMonth+entradaMonths+m;
       ensureLen(targetArray, idx+1);
       targetArray[idx] += restanteTotal/restParc;
     }
-
-    // Pagamento na entrega
-    if(payOnDeliveryPct > 0){
-      const lastIdx = p.months - 1;
-      ensureLen(targetArray, lastIdx+1);
-      targetArray[lastIdx] += price_unit * payOnDeliveryPct;
-    }
-
     if(cfg.applyProjection===true){
       for(let i=0;i<targetArray.length;i++) targetArray[i]*=projCorr(i);
     }
@@ -581,6 +527,7 @@ function computeProject(p) {
 
   const finalLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, months);
 
+  // ===== Investimentos =====
   const incc = 0.0045;
   const den = (months*(months+1))/2;
   for(let m=1;m<=finalLen;m++){
@@ -591,6 +538,7 @@ function computeProject(p) {
     } else investments[m-1] = 0;
   }
 
+  // ===== Custos =====
   for(let m=0;m<finalLen;m++){
     if(m<months){
       costs[m]=0;
@@ -645,67 +593,7 @@ function computeProject(p) {
   };
 }
 
-/* -------------------------
-   Rendering / Charts
-   ------------------------- */
-
-let portfolioChart=null;
-let mainChart = null; // kept for report export compatibility
-function updatePortfolioChart(){
-  const totals = projects.map(p=>computeProject(p).VGV);
-  const labels = projects.map(p=>p.name);
-
-  const ctx = document.getElementById('chartPortfolio').getContext('2d');
-  if(portfolioChart){
-    portfolioChart.data.labels = labels;
-    portfolioChart.data.datasets[0].data = totals;
-    portfolioChart.update();
-  } else {
-    portfolioChart = new Chart(ctx,{
-      type:'doughnut',
-      data:{labels, datasets:[{data:totals, backgroundColor: colors}]},
-      options:{
-        responsive:true,
-        maintainAspectRatio:false,
-        plugins:{
-          legend:{position:'bottom',labels:{color:varOr('#fff')}},
-          tooltip:{callbacks:{label: (ctx) => `${ctx.label}: ${ctx.raw.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}`}}
-        }
-      }
-    });
-  }
-
-  // expose a bar-style mainChart for reports (create/update lightweight bar)
-  const barCtx = document.createElement('canvas');
-  if(!mainChart){
-    // create an offscreen Chart instance for export convenience
-    const temp = document.createElement('canvas');
-    document.body.appendChild(temp);
-    temp.style.display = 'none';
-    mainChart = new Chart(temp.getContext('2d'), {
-      type:'bar',
-      data:{ labels: labels, datasets:[{ label:'VGV', data: totals, backgroundColor: colors[0] ? colors[0] : '#c9a84b' }]},
-      options:{ responsive: true, maintainAspectRatio: false }
-    });
-  } else {
-    mainChart.data.labels = labels;
-    mainChart.data.datasets[0].data = totals;
-    mainChart.update();
-  }
-
-  document.getElementById('panelVgv').innerText = totals.reduce((s,v)=>s+v,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
-  document.getElementById('totalVgv').innerText = document.getElementById('panelVgv').innerText;
-
-  const avgRoi = projects.reduce((s,p)=>s + computeProject(p).roi,0)/projects.length;
-  const avgIrr = projects.reduce((s,p)=>s + computeProject(p).irrAnnual,0)/projects.length;
-  document.getElementById('avgRoi').innerText = isFinite(avgRoi)?round2(avgRoi)+'%':'--';
-  document.getElementById('avgIrr').innerText = isFinite(avgIrr)?round2(avgIrr*100)+'%':'--';
-}
-
-/* -------------------------
-   Sidebar rendering (projects)
-   ------------------------- */
-
+// ===== Renderização e Gráficos =====
 function renderSidebar(){
   const el=document.getElementById('projectsList'); el.innerHTML='';
   const searchVal=document.getElementById('search').value.toLowerCase();
@@ -713,58 +601,83 @@ function renderSidebar(){
     if(searchVal && !p.name.toLowerCase().includes(searchVal)) return;
     const d=computeProject(p);
     const div=document.createElement('div'); div.className='project-card';
-    div.setAttribute('tabindex','0');
-    div.innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div style="font-weight:700">${escapeHtml(p.name)}</div>
-        <div style="font-size:13px;color:var(--muted)">${escapeHtml(p.city)}</div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <div style="min-width:120px"><div class="tiny muted">VGV</div><div style="font-weight:800;color:var(--accent)">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
-        <div style="min-width:100px"><div class="tiny muted">ROI</div><div style="font-weight:800">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
-        <div style="min-width:100px"><div class="tiny muted">TIR</div><div class="tiny muted">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
-      </div>
-    `;
-    div.addEventListener('click',()=>openProjectModal(p.id));
-    div.addEventListener('keypress', (e)=>{ if(e.key==='Enter') openProjectModal(p.id) });
+    const info=document.createElement('div'); info.className='info';
+    
+    info.innerHTML = `
+  <label><strong>Nome</strong></label>
+  <input type="text" value="${p.name.replace(/"/g,'&quot;')}" data-field="name">
+  <label><strong>Cidade</strong></label>
+  <input type="text" value="${p.city.replace(/"/g,'&quot;')}" data-field="city">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <div><label>Unidades</label><input type="number" value="${p.units}" data-field="units"></div>
+    <div><label>Área (m²)</label><input type="number" value="${p.area}" data-field="area"></div>
+    <div><label>Preço/m²</label><input type="number" value="${p.price_m2}" data-field="price_m2"></div>
+    <div><label>Custo/m²</label><input type="number" value="${p.cost_m2}" data-field="cost_m2"></div>
+    <div><label>Meses</label><input type="number" value="${p.months}" data-field="months"></div>
+    <div><label>Pré-lançamento</label><input type="number" value="${p.pre_launch_sales}" data-field="pre_launch_sales"></div>
+    <div><label>Lançamento</label><input type="number" value="${p.launch_sales}" data-field="launch_sales"></div>
+    <div><label>Vendas/mês</label><input type="number" value="${p.monthly_sales}" data-field="monthly_sales"></div>
+  </div>
+  <div class="kpi">
+    <div class="item"><div class="small">VGV</div><div class="value">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="item"><div class="small">ROI</div><div class="value">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
+    <div class="item"><div class="small">TIR</div><div class="value">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
+  </div>
+`;
+    info.querySelectorAll('input').forEach(inp=>{
+  inp.addEventListener('click', e => e.stopPropagation());
+
+  // Atualiza só quando o usuário sai do campo (blur) ou confirma (change)
+  const handleUpdate = () => {
+    const field = inp.dataset.field;
+    if (['units','area','price_m2','cost_m2','months','pre_launch_sales','launch_sales','monthly_sales'].includes(field)) {
+      p[field] = Number(inp.value);
+    } else {
+      p[field] = inp.value;
+    }
+    renderSidebar();
+    if (document.getElementById('detailModal').style.display === 'flex') openProjectModal(p.id);
+  };
+
+  inp.addEventListener('change', handleUpdate);
+  inp.addEventListener('blur', handleUpdate);
+});
+
+    div.appendChild(info); div.addEventListener('click',()=>openProjectModal(p.id));
     el.appendChild(div);
   });
   updatePortfolioChart();
 }
 
-/* -------------------------
-   Modal logic
-   ------------------------- */
+let portfolioChart=null;
+function updatePortfolioChart(){
+  const totals=projects.map(p=>computeProject(p).VGV);
+  const ctx=document.getElementById('chartPortfolio').getContext('2d');
+  if(portfolioChart) {
+    // atualizar dados para evitar recriar instância -> melhora performance
+    portfolioChart.data.labels = projects.map(p=>p.name);
+    portfolioChart.data.datasets[0].data = totals;
+    portfolioChart.update();
+    document.getElementById('totalVgv').innerText=totals.reduce((s,v)=>s+v,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+    const avgRoi=projects.reduce((s,p)=> s + computeProject(p).roi,0)/projects.length;
+    const avgIrr=projects.reduce((s,p)=> s + computeProject(p).irrAnnual,0)/projects.length;
+    document.getElementById('avgRoi').innerText=isFinite(avgRoi)?avgRoi.toFixed(1)+'%':'--';
+    document.getElementById('avgIrr').innerText=isFinite(avgIrr)?(avgIrr*100).toFixed(1)+'%':'--';
+    return;
+  }
+  portfolioChart=new Chart(ctx,{type:'doughnut',data:{labels:projects.map(p=>p.name),datasets:[{data:totals,backgroundColor:colors}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#fff'}}}}});
+  document.getElementById('totalVgv').innerText=totals.reduce((s,v)=>s+v,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  const avgRoi=projects.reduce((s,p)=> s + computeProject(p).roi,0)/projects.length;
+  const avgIrr=projects.reduce((s,p)=> s + computeProject(p).irrAnnual,0)/projects.length;
+  document.getElementById('avgRoi').innerText=isFinite(avgRoi)?avgRoi.toFixed(1)+'%':'--';
+  document.getElementById('avgIrr').innerText=isFinite(avgIrr)?(avgIrr*100).toFixed(1)+'%':'--';
+}
+
+// ===== Modal logic =====
 let modalCharts = { fluxo: null, receitas: null, custos: null };
 function destroyModalCharts(){
   Object.keys(modalCharts).forEach(k=>{
     if(modalCharts[k]) { try{ modalCharts[k].destroy(); }catch(e){} modalCharts[k]=null; }
-  });
-}
-
-function createModalChart(ctx, datasets){
-  return new Chart(ctx,{
-    type:'line',
-    data:{labels:Array.from({length:datasets[0].data.length},(_,i)=>'M'+(i+1)),datasets},
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      interaction:{mode:'nearest', axis:'x', intersect:false},
-      scales:{x:{ticks:{color:'#fff'}}, y:{ticks:{color:'#fff'}}},
-      plugins:{
-        legend:{labels:{color:'#fff'}},
-        tooltip:{
-          callbacks:{
-            label:function(context){
-              const v = context.raw || 0;
-              const total = context.dataset.data.slice(0, context.dataIndex+1).reduce((s,x)=>s+x,0);
-              return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}) 
-                     + ' (Total: ' + total.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}) + ')';
-            }
-          }
-        }
-      }
-    }
   });
 }
 
@@ -773,29 +686,62 @@ function openProjectModal(id){
   if(!p) return;
   const d = computeProject(p);
 
+  // preencher header do modal
   document.getElementById('modalTitle').innerText = p.name;
   document.getElementById('modalCity').innerText = p.city;
   document.getElementById('modalVgv').innerText = d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 
+  // preencher estatísticas
   document.getElementById('modalStats').innerHTML = `
-    <div class="stat"><div class="tiny muted">ROI</div><div style="font-weight:800;color:var(--accent)">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
-    <div class="stat"><div class="tiny muted">TIR (a.a.)</div><div style="font-weight:800;color:var(--accent)">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
-    <div class="stat"><div class="tiny muted">VPL (12% a.a.)</div><div style="font-weight:800">${fmt(d.npvVal)}</div></div>
-    <div class="stat"><div class="tiny muted">Payback</div><div style="font-weight:800;color:var(--accent)">${d.payback} meses</div></div>
-    <div class="stat"><div class="tiny muted">Custo construção</div><div style="font-weight:800">${fmt(d.totalConstruction)}</div></div>
-    <div class="stat"><div class="tiny muted">Marketing</div><div style="font-weight:800">${fmt(d.marketingTotal)}</div></div>
-    <div class="stat"><div class="tiny muted">Comissão</div><div style="font-weight:800">${fmt(d.brokerTotal)}</div></div>
-    <div class="stat"><div class="tiny muted">Unidades</div><div style="font-weight:800">${p.units}</div></div>
-    <div class="stat"><div class="tiny muted">Área total</div><div style="font-weight:800">${(p.units * p.area).toLocaleString('pt-BR')} m²</div></div>
-    <div class="stat"><div class="tiny muted">Receita média/unidade</div><div style="font-weight:800">${fmt(d.VGV / p.units)}</div></div>
-    <div class="stat"><div class="tiny muted">Lucro estimado</div><div style="font-weight:800;color:var(--accent)">${fmt(d.VGV - d.totalConstruction - d.marketingTotal - d.brokerTotal)}</div></div>
+    <div class="stat"><div class="small">ROI</div><div style="font-weight:800;color:var(--gold)">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
+    <div class="stat"><div class="small">TIR (a.a.)</div><div style="font-weight:800;color:var(--gold)">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
+    <div class="stat"><div class="small">VPL (12% a.a.)</div><div style="font-weight:800;color:var(--gold)">${d.npvVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Payback</div><div style="font-weight:800;color:var(--gold)">${d.payback} meses</div></div>
+    <div class="stat"><div class="small">Custo construção</div><div style="font-weight:800;color:var(--gold)">${d.totalConstruction.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Marketing</div><div style="font-weight:800;color:var(--gold)">${d.marketingTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Comissão</div><div style="font-weight:800;color:var(--gold)">${d.brokerTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Unidades</div><div style="font-weight:800;color:var(--gold)">${p.units}</div></div>
+    <div class="stat"><div class="small">Área total</div><div style="font-weight:800;color:var(--gold)">${(p.units * p.area).toLocaleString('pt-BR')} m²</div></div>
+    <div class="stat"><div class="small">Receita média/unidade</div><div style="font-weight:800;color:var(--gold)">${(d.VGV / p.units).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Lucro estimado</div><div style="font-weight:800;color:var(--gold)">${(d.VGV - d.totalConstruction - d.marketingTotal - d.brokerTotal).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
   `;
 
+  // abrir modal
   document.getElementById('detailModal').style.display = 'flex';
+
+  // destruir gráficos antigos
   destroyModalCharts();
 
+  // helper para criar gráfico com tooltip acumulado
+  function createModalChart(ctx, datasets){
+    return new Chart(ctx,{
+      type:'line',
+      data:{labels:Array.from({length:d.net.length},(_,i)=>'M'+(i+1)),datasets:datasets},
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        interaction:{mode:'nearest', axis:'x', intersect:false},
+        scales:{x:{ticks:{color:'#fff'}}, y:{ticks:{color:'#fff'}}},
+        plugins:{
+          legend:{labels:{color:'#fff'}},
+          tooltip:{
+            callbacks:{
+              label:function(context){
+                const v = context.raw || 0;
+                const total = context.dataset.data.slice(0, context.dataIndex+1).reduce((s,x)=>s+x,0);
+                return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}) 
+                       + ' (Total: ' + total.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}) + ')';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // criar gráficos
   modalCharts.fluxo = createModalChart(document.getElementById('chartFluxo').getContext('2d'), [
-    {label:'Fluxo Líquido', data:d.net, borderColor:colors[0], backgroundColor:'rgba(201,168,75,0.06)', fill:true, tension:0.3}
+    {label:'Fluxo Líquido', data:d.net, borderColor:'#c9a84b', backgroundColor:'rgba(201,168,75,0.08)', fill:true, tension:0.3}
   ]);
 
   modalCharts.receitas = createModalChart(document.getElementById('chartReceitas').getContext('2d'), [
@@ -811,12 +757,19 @@ function openProjectModal(id){
     {label:'Total Custos', data:combinedCosts, borderColor:'#ff5722', backgroundColor:'rgba(255,87,34,0.06)', fill:true, tension:0.3}
   ]);
 
+  // aba padrão
   setActiveTab('fluxo');
 }
 
+document.getElementById('closeModal').addEventListener('click',()=>{
+  document.getElementById('detailModal').style.display='none';
+  destroyModalCharts();
+});
+
+// gerenciamento de abas no modal
 document.querySelectorAll('#modalTabs .tab-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    const tab=btn.dataset.tab;
+  btn.addEventListener('click', (e) => {
+    const tab = btn.dataset.tab;
     setActiveTab(tab);
   });
 });
@@ -825,145 +778,65 @@ function setActiveTab(tab){
   document.getElementById('wrapFluxo').style.display = (tab==='fluxo') ? 'block' : 'none';
   document.getElementById('wrapReceitas').style.display = (tab==='receitas') ? 'block' : 'none';
   document.getElementById('wrapCustos').style.display = (tab==='custos') ? 'block' : 'none';
+  // se os charts foram criados, chamar update para ajustar tamanhos
   Object.keys(modalCharts).forEach(k=>{ if(modalCharts[k]) try{ modalCharts[k].resize(); modalCharts[k].update(); } catch(e){} });
 }
-document.getElementById('closeModal').addEventListener('click',()=>{ document.getElementById('detailModal').style.display='none'; destroyModalCharts(); });
 
-/* -------------------------
-   Persistence & export
-   ------------------------- */
-function saveAll(){ localStorage.setItem('aps_projects',JSON.stringify(projects)); saveCfg(); toast('Alterações salvas (localStorage)'); }
-function exportJson(){const blob=new Blob([JSON.stringify(projects,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='aps_projects.json'; a.click(); URL.revokeObjectURL(url);}
-function downloadCsv(){ const rows=['id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales']; projects.forEach(p=>rows.push([p.id,p.name,p.city,p.units,p.area,p.price_m2,p.cost_m2,p.months,p.pre_launch_sales,p.launch_sales,p.monthly_sales].join(','))); const blob=new Blob([rows.join('\\n')],{type:'text/csv'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='aps_projects.csv'; a.click(); URL.revokeObjectURL(url); }
+// ===== Persistência e Eventos (mantidos) =====
+function saveAll(){ localStorage.setItem('aps_projects',JSON.stringify(projects)); saveCfg(); alert('Alterações salvas no navegador (localStorage).'); }
+function exportJson(){const blob=new Blob([JSON.stringify(projects,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.json';a.click();URL.revokeObjectURL(url);}
+function downloadCsv(){const rows=['id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales'];projects.forEach(p=>rows.push([p.id,p.name,p.city,p.units,p.area,p.price_m2,p.cost_m2,p.months,p.pre_launch_sales,p.launch_sales,p.monthly_sales].join(',')));const blob=new Blob([rows.join('\n')],{type:'text/csv'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='aps_projects.csv';a.click();URL.revokeObjectURL(url);}
 
-/* small toast */
-function toast(msg, ms=1600){
-  const el = document.createElement('div');
-  el.style.position='fixed'; el.style.right='18px'; el.style.bottom='18px'; el.style.background='rgba(0,0,0,0.7)'; el.style.padding='10px 14px'; el.style.borderRadius='8px'; el.style.color='#fff'; el.style.zIndex=9999; el.style.fontSize='13px';
-  el.innerText = msg; document.body.appendChild(el);
-  setTimeout(()=>{ el.style.transition='opacity .25s'; el.style.opacity='0'; setTimeout(()=>el.remove(),250); }, ms);
-}
-
-/* -------------------------
-   UI wiring & events
-   ------------------------- */
-const debounce = (fn, wait=250)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; };
-
-document.getElementById('btnExport').addEventListener('click', exportJson);
-document.getElementById('btnDownloadCsv').addEventListener('click', downloadCsv);
-document.getElementById('btnPublish').addEventListener('click', saveAll);
-document.getElementById('btnReset').addEventListener('click', ()=>{ if(confirm('Restaurar valores iniciais?')){ localStorage.removeItem('aps_projects'); localStorage.removeItem(cfgKey); location.reload(); }});
-document.getElementById('btnNew').addEventListener('click', ()=>{ const id=projects.length+1; projects.push({id:id,name:'Novo Empreendimento '+id,city:'Cidade',units:10,area:70,price_m2:5000,cost_m2:2000,months:18,pre_launch_sales:0,launch_sales:0,monthly_sales:2}); renderSidebar(); });
-document.getElementById('search').addEventListener('input', debounce(()=>renderSidebar(),200));
-['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths','preLaunchMonths','launchMonths','incc','ipca','payUpfrontPct','payIntermediatePct','intermediateMonths','payOnDeliveryPct'].forEach(id=>{
-  const el=document.getElementById(id);
-  if(el) el.addEventListener('change', debounce(saveCfg,200));
-});
-
-/* -------------------------
-   Login handling (preserved)
-   ------------------------- */
 document.getElementById('btnLogin').addEventListener('click', () => {
   const input = document.getElementById('pwd');
   const box = document.getElementById('loginBox');
   if (input.value === PASSWORD) {
     document.getElementById('loginModal').style.display = 'none';
-    loadSavedProjects();
+    document.getElementById('app').style.display = 'flex';
+    const saved = localStorage.getItem('aps_projects');
+    if (saved) try { projects = JSON.parse(saved); } catch(e){}
     loadCfg();
     renderSidebar();
   } else {
-    box.animate([{transform:'translateX(-10px)'},{transform:'translateX(10px)'},{transform:'translateX(0)'}],{duration:300});
+    // efeito de erro (shake)
+    box.style.transform = 'translateX(-10px)';
+    box.style.borderColor = '#f44336';
     box.style.boxShadow = '0 0 15px rgba(244,67,54,0.6)';
-    setTimeout(()=> box.style.boxShadow='0 0 15px rgba(201,168,75,0.4)', 300);
-    input.value=''; input.focus();
-    toast('Senha incorreta',1200);
+    setTimeout(() => { box.style.transform = 'translateX(10px)'; }, 100);
+    setTimeout(() => { box.style.transform = 'translateX(-10px)'; }, 200);
+    setTimeout(() => { box.style.transform = 'translateX(0)'; box.style.borderColor = 'rgba(255,255,255,0.05)'; box.style.boxShadow='0 0 15px rgba(201,168,75,0.4)'; }, 300);
+    input.value = '';
+    input.focus();
   }
 });
-document.getElementById('pwd').addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btnLogin').click(); });
+  // Permite Enter no campo senha
+document.getElementById('pwd').addEventListener('keypress', (e) => {
+  if (e.key === 'Enter') document.getElementById('btnLogin').click();
+}); 
+document.getElementById('btnExport').addEventListener('click',exportJson);
+document.getElementById('btnPublish').addEventListener('click',saveAll);
+document.getElementById('btnReset').addEventListener('click',()=>{if(confirm('Restaurar valores iniciais?')){localStorage.removeItem('aps_projects');localStorage.removeItem(cfgKey);location.reload();}});
 
-/* -------------------------
-   Load saved projects
-   ------------------------- */
-function loadSavedProjects(){
-  const saved = localStorage.getItem('aps_projects');
-  if (saved) try { projects = JSON.parse(saved); } catch(e){}
-}
+document.getElementById('btnNew').addEventListener('click',()=>{const id=projects.length+1;projects.push({id:id,name:'Novo Empreendimento '+id,city:'Cidade',units:10,area:70,price_m2:5000,cost_m2:2000,months:18,pre_launch_sales:0,launch_sales:0,monthly_sales:2});renderSidebar();});
+document.getElementById('btnDownloadCsv').addEventListener('click',downloadCsv);
 
-/* -------------------------
-   Theme selector
-   ------------------------- */
-const themeSelect = document.getElementById('themeSelect');
-themeSelect.addEventListener('change', ()=>{ const t = themeSelect.value; document.body.className = 'theme-' + t; localStorage.setItem('apsp_theme', t); });
-window.addEventListener('load', ()=>{ const t = localStorage.getItem('apsp_theme') || 'royal'; themeSelect.value = t; document.body.className = 'theme-' + t; });
+// salvar cfg ao alterar inputs
+document.getElementById('discountPre').addEventListener('change',saveCfg);
+document.getElementById('discountLaunch').addEventListener('change',saveCfg);
+document.getElementById('parcelasRestantes').addEventListener('change',saveCfg);
+document.getElementById('entradaPct').addEventListener('change',saveCfg);
+document.getElementById('entradaMonths').addEventListener('change',saveCfg);
+document.getElementById('preLaunchMonths').addEventListener('change',saveCfg);
+document.getElementById('launchMonths').addEventListener('change',saveCfg);
+document.getElementById('incc').addEventListener('change', saveCfg);
+document.getElementById('ipca').addEventListener('change', saveCfg);
 
-/* -------------------------
-   Utility panel actions
-   ------------------------- */
-document.getElementById('btnResetLocal').addEventListener('click', ()=>{ if(confirm('Limpar localStorage e recarregar?')){ localStorage.clear(); location.reload(); }});
-document.getElementById('btnPrint').addEventListener('click', ()=> window.print());
-document.getElementById('btnExportCSV').addEventListener('click', ()=>{
-  const rows=[['Label','Valor']];
-  if(mainChart){
-    mainChart.data.labels.forEach((lab,i)=> rows.push([lab, mainChart.data.datasets[0].data[i]]));
-  }
-  const csv = rows.map(r=>r.join(',')).join('\\n');
-  const blob = new Blob([csv],{type:'text/csv'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'export.csv'; a.click(); URL.revokeObjectURL(a.href);
-});
-
-/* -------------------------
-   Report generation
-   ------------------------- */
-document.getElementById('btnGenerateReport').addEventListener('click', ()=>{
-  const win = window.open('', '_blank');
-  const chartData = mainChart ? mainChart.toBase64Image() : '';
-  const labels = mainChart ? mainChart.data.labels : [];
-  const data = mainChart ? mainChart.data.datasets[0].data : [];
-  win.document.write(`
-    <html>
-    <head><title>Relatório Premium - Simulação</title>
-      <style>
-        body{font-family:Arial;padding:40px;background:#f7f7f7;color:#222}
-        h1{text-align:center;color:#111}
-        .section{background:#fff;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
-        .chart-img{display:block;margin:20px auto;max-width:900px;border-radius:12px}
-        table{width:100%;border-collapse:collapse}
-        th,td{padding:8px;border:1px solid #ddd;text-align:left}
-      </style>
-    </head>
-    <body>
-      <h1>Relatório Premium - APSPARCEIROS Invest</h1>
-      <div class="section"><h2>Resumo</h2><p>Relatório gerado automaticamente com os principais indicadores e gráfico consolidado.</p></div>
-      <div class="section"><h2>Gráfico Consolidado</h2>${chartData?`<img src="${chartData}" class="chart-img">`:`<p>Sem gráfico disponível</p>`}</div>
-      <div class="section"><h2>Dados</h2>
-        <table><thead><tr><th>Mês</th><th>Valor</th></tr></thead><tbody>
-        ${labels.map((lab,i)=>`<tr><td>${lab}</td><td>${(data[i]||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</td></tr>`).join('')}
-        </tbody></table>
-      </div>
-      <script>setTimeout(()=>window.print(),300)</script>
-    </body>
-    </html>
-  `);
-  win.document.close();
-});
-
-/* -------------------------
-   Helpers
-   ------------------------- */
-function escapeHtml(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function varOr(def){ return def; }
-
-/* -------------------------
-   Initial boot
-   ------------------------- */
-function init(){
-  loadSavedProjects();
+window.addEventListener('load',()=>{
+  const saved=localStorage.getItem('aps_projects');
+  if(saved)try{projects=JSON.parse(saved);}catch(e){}
   loadCfg();
-  renderSidebar();
-  updatePortfolioChart();
-}
-window.addEventListener('load', init);
-
+});
 </script>
+
 </body>
 </html>
