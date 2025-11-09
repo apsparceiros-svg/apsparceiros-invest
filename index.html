@@ -22,11 +22,15 @@
     --radius:12px;
     --max-width:1280px;
   }
+  /* Theme variations applied via body class */
+  body.theme-royal { --bg:#070707; --card:#121212; --accent:#c9a84b; --text:#ffffff; }
+  body.theme-glass { --bg:#0f0f12; --card:rgba(255,255,255,0.03); --accent:#e6e6e6; --text:#ffffff; }
+  body.theme-titanium { --bg:#0d0f12; --card:#17181b; --accent:#62e0ff; --text:#ffffff; }
 
   /* ===== Reset & base ===== */
   *{box-sizing:border-box}
-  html,body{height:100%;margin:0;background:linear-gradient(180deg,#040404,#0a0a0a);-webkit-font-smoothing:antialiased;font-family:Inter,system-ui,Arial;color:var(--accent);font-size:15px}
-  a{color:var(--gold);text-decoration:none}
+  html,body{height:100%;margin:0;background:var(--bg);-webkit-font-smoothing:antialiased;font-family:Inter,system-ui,Arial;color:var(--text, #fff);font-size:15px}
+  a{color:var(--accent);text-decoration:none}
   button{font-family:inherit}
 
   /* ===== App layout ===== */
@@ -50,7 +54,7 @@
     border:1px solid rgba(255,255,255,0.03);
     margin-bottom:12px;
   }
-  .brand{font-weight:800;color:var(--gold);letter-spacing:0.6px;font-size:20px}
+  .brand{font-weight:800;color:var(--accent);letter-spacing:0.6px;font-size:20px}
   .meta{color:var(--muted);font-size:14px}
 
   /* ===== Sidebar ===== */
@@ -64,7 +68,7 @@
     height:calc(100vh - 120px);
     overflow:auto;
   }
-  .section-title{font-weight:700;color:var(--gold);margin-bottom:8px}
+  .section-title{font-weight:700;color:var(--accent);margin-bottom:8px}
   .small{font-size:13px;color:var(--muted)}
   .controls label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
   .controls input[type=text], .controls input[type=number], .controls select{
@@ -73,8 +77,8 @@
   }
   .controls .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 
-  .button{background:var(--gold);color:#0b0b0b;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
-  .button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent)}
+  .button{background:var(--accent);color:#0b0b0b;border:none;padding:10px 14px;border-radius:8px;cursor:pointer;font-weight:700}
+  .button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
 
   /* ===== Content ===== */
   .content{
@@ -92,7 +96,7 @@
   .kpis{display:flex;gap:12px;flex-wrap:wrap}
   .kpi{background:var(--card);padding:12px;border-radius:10px;min-width:160px}
   .kpi .small{color:var(--muted)}
-  .kpi .value{font-weight:800;color:var(--gold);margin-top:6px}
+  .kpi .value{font-weight:800;color:var(--accent);margin-top:6px}
 
   /* cards & project list */
   .card{background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.00));padding:14px;border-radius:10px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.03)}
@@ -102,11 +106,16 @@
   /* modal */
   #detailModal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.9);z-index:200}
   .modal-inner{width:94%;max-width:1200px;max-height:92vh;background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));border-radius:14px;padding:20px;border:1px solid rgba(255,255,255,0.05);overflow:auto;position:relative}
-  .modal-close{position:absolute;right:16px;top:14px;background:transparent;border:none;color:var(--gold);font-size:20px;cursor:pointer}
+  .modal-close{position:absolute;right:16px;top:14px;background:transparent;border:none;color:var(--accent);font-size:20px;cursor:pointer}
 
   .modal-tabs{display:flex;gap:8px;margin-bottom:12px}
-  .tab-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px;color:var(--accent);cursor:pointer}
-  .tab-btn.active{background:var(--gold);color:#0b0b0b;border-color:var(--gold)}
+  .tab-btn{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:8px;color:var(--text);cursor:pointer}
+  .tab-btn.active{background:var(--accent);color:#0b0b0b;border-color:var(--accent)}
+
+  /* util panels */
+  #themeSelector{position:fixed;top:10px;right:10px;padding:8px;background:var(--card);color:var(--text);border-radius:8px;border:1px solid rgba(255,255,255,0.04);z-index:9999}
+  #utilityPanel{position:fixed;bottom:10px;right:10px;background:var(--card);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);display:flex;gap:10px;z-index:9999}
+  #reportPanel{position:fixed;bottom:70px;right:10px;background:var(--card);padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);display:flex;gap:10px;z-index:9999}
 
   /* responsive */
   @media(max-width:1100px){
@@ -126,7 +135,16 @@
   @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
-<body>
+<body class="theme-royal">
+
+<div id="themeSelector">
+  Tema:
+  <select id="themeSelect" aria-label="Selecionar tema">
+    <option value="royal">Royal Gold</option>
+    <option value="glass">Glass Neo</option>
+    <option value="titanium">Titanium Pro</option>
+  </select>
+</div>
 
 <div class="app fade-in" role="application" aria-label="Painel APSPARCEIROS Invest">
   <header class="header" role="banner">
@@ -238,7 +256,7 @@
             <div><strong>Visão Geral do Portfólio</strong><div class="tiny muted">Resumo consolidado</div></div>
             <div style="text-align:right">
               <div class="tiny muted">VGV total</div>
-              <div style="font-weight:800;color:var(--gold)" id="panelVgv">R$ 0</div>
+              <div style="font-weight:800;color:var(--accent)" id="panelVgv">R$ 0</div>
             </div>
           </div>
 
@@ -282,12 +300,12 @@
   </main>
 </div>
 
-<!-- LOGIN MODAL (mantive conforme original) -->
+<!-- LOGIN MODAL -->
 <div id="loginModal" style="position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:500">
   <div id="loginBox" style="background:#0b0b0b;padding:28px;border-radius:12px;width:420px;border:1px solid rgba(255,255,255,0.05);box-shadow:0 0 15px rgba(201,168,75,0.4)">
-    <h2 style="margin-top:0;color:var(--gold);text-align:center">Acesso Premium</h2>
+    <h2 style="margin-top:0;color:var(--accent);text-align:center">Acesso Premium</h2>
     <p class="tiny muted" style="margin-bottom:16px;text-align:center">Digite a senha para desbloquear o painel completo</p>
-    <input id="pwd" type="password" placeholder="Senha" aria-label="Senha" style="width:100%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--accent);margin-bottom:10px">
+    <input id="pwd" type="password" placeholder="Senha" aria-label="Senha" style="width:100%;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--text);margin-bottom:10px">
     <div style="display:flex;gap:8px;margin-top:8px">
       <button id="btnLogin" class="button" style="flex:1">Entrar</button>
     </div>
@@ -303,7 +321,7 @@
   <div class="modal-inner">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div>
-        <h3 id="modalTitle" style="margin:0;color:var(--gold)"></h3>
+        <h3 id="modalTitle" style="margin:0;color:var(--accent)"></h3>
         <div id="modalCity" class="tiny muted" style="margin-top:4px"></div>
       </div>
       <button class="modal-close" id="closeModal" aria-label="Fechar modal">✕</button>
@@ -311,7 +329,7 @@
 
     <div style="display:flex;justify-content:center;align-items:center;gap:12px;margin-top:10px">
       <div class="tiny muted">VGV</div>
-      <div id="modalVgv" style="font-weight:800;color:var(--gold)"></div>
+      <div id="modalVgv" style="font-weight:800;color:var(--accent)"></div>
     </div>
 
     <div class="modal-tabs" id="modalTabs" style="margin-top:12px">
@@ -335,12 +353,20 @@
   </div>
 </div>
 
+<!-- Utility & Report Panels -->
+<div id="utilityPanel">
+  <button id="btnExportCSV" style="padding:6px 10px;background:var(--accent);color:#000;font-weight:bold;border:none;border-radius:4px;cursor:pointer;">Exportar CSV</button>
+  <button id="btnPrint" style="padding:6px 10px;background:var(--accent);color:#000;font-weight:bold;border:none;border-radius:4px;cursor:pointer;">Imprimir</button>
+  <button id="btnResetLocal" style="padding:6px 10px;background:var(--accent);color:#000;font-weight:bold;border:none;border-radius:4px;cursor:pointer;">Resetar</button>
+</div>
+
+<div id="reportPanel">
+  <button id="btnGenerateReport" style="padding:6px 10px;background:var(--accent);color:#000;font-weight:bold;border:none;border-radius:4px;cursor:pointer;">Gerar Relatório Premium</button>
+</div>
+
 <script>
 /* ===================================================================
-   Professional upgraded single-file application
-   - preserves original logic & data
-   - adds new payment modes (upfront, intermediate, delivery)
-   - improves UX, accessibility, validation, performance
+   Arquivo final: funcionalidades completas
    =================================================================== */
 
 /* -------------------------
@@ -357,7 +383,7 @@ const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 /* -------------------------
    Sale configuration + persistence
    ------------------------- */
-const cfgKey = 'aps_sale_cfg_v2';
+const cfgKey = 'aps_sale_cfg_v3';
 let saleCfg = {
   discountPre:10, discountLaunch:5, parcelasRestantes:24, entradaPct:30, entradaMonths:6,
   preLaunchMonths:2, launchMonths:3, incc:0.0045, ipca:0.005,
@@ -368,18 +394,15 @@ let saleCfg = {
 function loadCfg(){
   const s = localStorage.getItem(cfgKey);
   if(s) try { saleCfg = Object.assign(saleCfg, JSON.parse(s)); } catch(e){}
-  // map to inputs if exist
   const ids = ['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths','preLaunchMonths','launchMonths','incc','ipca','payUpfrontPct','payIntermediatePct','intermediateMonths','payOnDeliveryPct'];
   ids.forEach(id=>{
     const el=document.getElementById(id);
-    if(el) el.value = saleCfg[id] ?? saleCfg[id];
+    if(el && saleCfg[id] !== undefined) el.value = saleCfg[id];
   });
-  // render
   renderSidebar();
 }
 
 function saveCfg(){
-  // read validated values
   saleCfg.discountPre = clampPercent(Number(document.getElementById('discountPre').value));
   saleCfg.discountLaunch = clampPercent(Number(document.getElementById('discountLaunch').value));
   saleCfg.parcelasRestantes = Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes').value) || 24));
@@ -394,16 +417,13 @@ function saveCfg(){
   saleCfg.intermediateMonths = Math.max(1, Math.floor(Number(document.getElementById('intermediateMonths').value) || 1));
   saleCfg.payOnDeliveryPct = clampPercent(Number(document.getElementById('payOnDeliveryPct').value));
 
-  // Ensure sum of percentages <= 100 (normalize if needed)
   const totalPct = saleCfg.entradaPct + saleCfg.payUpfrontPct + saleCfg.payIntermediatePct + saleCfg.payOnDeliveryPct;
   if(totalPct > 100){
-    // normalize proportionally (stable behavior)
     const factor = 100 / totalPct;
     saleCfg.entradaPct = round2(saleCfg.entradaPct * factor);
     saleCfg.payUpfrontPct = round2(saleCfg.payUpfrontPct * factor);
     saleCfg.payIntermediatePct = round2(saleCfg.payIntermediatePct * factor);
     saleCfg.payOnDeliveryPct = round2(saleCfg.payOnDeliveryPct * factor);
-    // reflect normalized values in inputs
     ['entradaPct','payUpfrontPct','payIntermediatePct','payOnDeliveryPct'].forEach(id=>{
       const el=document.getElementById(id);
       if(el) el.value = saleCfg[id];
@@ -452,9 +472,6 @@ function irr(values, guess = 0.01) {
 
 /* -------------------------
    Core computeProject (enhanced)
-   - preserves original behavior
-   - integrates new payment modes (upfront, intermediate, delivery)
-   - returns detailed arrays
    ------------------------- */
 function computeProject(p) {
   const cfg = saleCfg;
@@ -468,19 +485,15 @@ function computeProject(p) {
   function ensureLen(arr, len){ while(arr.length < len) arr.push(0); }
 
   function addSalePayments(saleMonth, price_unit, targetArray, cfg, p) {
-    // existing defaults
     const entradaPct = (cfg.entradaPct || 30)/100;
     const entradaMonths = cfg.entradaMonths || 6;
-
-    // new modes (percentages)
-    const payUpfrontPct = (cfg.payUpfrontPct || 0)/100;        // à vista no ato
-    const payIntermediatePct = (cfg.payIntermediatePct || 0)/100; // intermediário
+    const payUpfrontPct = (cfg.payUpfrontPct || 0)/100;
+    const payIntermediatePct = (cfg.payIntermediatePct || 0)/100;
     const intermediateMonths = cfg.intermediateMonths || 1;
-    const payOnDeliveryPct = (cfg.payOnDeliveryPct || 0)/100;  // na entrega
+    const payOnDeliveryPct = (cfg.payOnDeliveryPct || 0)/100;
 
-    // remainder (goes to parcelado saldo)
     let restantePct = 1 - entradaPct - payUpfrontPct - payIntermediatePct - payOnDeliveryPct;
-    if(restantePct < 0) restantePct = 0; // safety
+    if(restantePct < 0) restantePct = 0;
 
     const entradaTotal = price_unit*entradaPct;
     const entradaParcel = entradaTotal/entradaMonths;
@@ -495,21 +508,21 @@ function computeProject(p) {
       return Math.pow(1+incc,p.months-saleMonth)*Math.pow(1+ipca, mes-p.months);
     }
 
-    // 0) Pagamento à vista no ato (payUpfrontPct)
+    // Upfront at sale month
     if(payUpfrontPct > 0){
       const idx = saleMonth;
       ensureLen(targetArray, idx+1);
       targetArray[idx] += price_unit * payUpfrontPct;
     }
 
-    // 1) Entrada parcelada
+    // Entrada parcelada
     for(let m=0;m<entradaMonths;m++){
       const idx = saleMonth+m;
       ensureLen(targetArray, idx+1);
       targetArray[idx] += entradaParcel;
     }
 
-    // 2) Pagamento intermediário (após entrada), em intermediateMonths parcelas
+    // Intermediário
     if(payIntermediatePct > 0){
       const intermediateTotal = price_unit * payIntermediatePct;
       const intermediateParcel = intermediateTotal / intermediateMonths;
@@ -520,21 +533,20 @@ function computeProject(p) {
       }
     }
 
-    // 3) Saldo restante parcelado
+    // Saldo parcelado
     for(let m=0;m<restParc;m++){
       const idx = saleMonth + entradaMonths + (payIntermediatePct>0 ? intermediateMonths : 0) + m;
       ensureLen(targetArray, idx+1);
       targetArray[idx] += restanteTotal/restParc;
     }
 
-    // 4) Pagamento na entrega das chaves (último mês da obra)
+    // Pagamento na entrega
     if(payOnDeliveryPct > 0){
       const lastIdx = p.months - 1;
       ensureLen(targetArray, lastIdx+1);
       targetArray[lastIdx] += price_unit * payOnDeliveryPct;
     }
 
-    // optional projection (kept for compatibility)
     if(cfg.applyProjection===true){
       for(let i=0;i<targetArray.length;i++) targetArray[i]*=projCorr(i);
     }
@@ -553,7 +565,6 @@ function computeProject(p) {
     }
   }
 
-  // distribute sales across periods
   distributeUnits(p.pre_launch_sales, 0, receiptsPre, 'pre', cfg.preLaunchMonths);
   distributeUnits(p.launch_sales, cfg.preLaunchMonths, receiptsLaunch, 'launch', cfg.launchMonths);
 
@@ -570,7 +581,6 @@ function computeProject(p) {
 
   const finalLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, months);
 
-  // investments
   const incc = 0.0045;
   const den = (months*(months+1))/2;
   for(let m=1;m<=finalLen;m++){
@@ -581,7 +591,6 @@ function computeProject(p) {
     } else investments[m-1] = 0;
   }
 
-  // costs
   for(let m=0;m<finalLen;m++){
     if(m<months){
       costs[m]=0;
@@ -641,6 +650,7 @@ function computeProject(p) {
    ------------------------- */
 
 let portfolioChart=null;
+let mainChart = null; // kept for report export compatibility
 function updatePortfolioChart(){
   const totals = projects.map(p=>computeProject(p).VGV);
   const labels = projects.map(p=>p.name);
@@ -658,11 +668,29 @@ function updatePortfolioChart(){
         responsive:true,
         maintainAspectRatio:false,
         plugins:{
-          legend:{position:'bottom',labels:{color:'#fff'}},
+          legend:{position:'bottom',labels:{color:varOr('#fff')}},
           tooltip:{callbacks:{label: (ctx) => `${ctx.label}: ${ctx.raw.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}`}}
         }
       }
     });
+  }
+
+  // expose a bar-style mainChart for reports (create/update lightweight bar)
+  const barCtx = document.createElement('canvas');
+  if(!mainChart){
+    // create an offscreen Chart instance for export convenience
+    const temp = document.createElement('canvas');
+    document.body.appendChild(temp);
+    temp.style.display = 'none';
+    mainChart = new Chart(temp.getContext('2d'), {
+      type:'bar',
+      data:{ labels: labels, datasets:[{ label:'VGV', data: totals, backgroundColor: colors[0] ? colors[0] : '#c9a84b' }]},
+      options:{ responsive: true, maintainAspectRatio: false }
+    });
+  } else {
+    mainChart.data.labels = labels;
+    mainChart.data.datasets[0].data = totals;
+    mainChart.update();
   }
 
   document.getElementById('panelVgv').innerText = totals.reduce((s,v)=>s+v,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
@@ -692,7 +720,7 @@ function renderSidebar(){
         <div style="font-size:13px;color:var(--muted)">${escapeHtml(p.city)}</div>
       </div>
       <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <div style="min-width:120px"><div class="tiny muted">VGV</div><div style="font-weight:800;color:var(--gold)">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+        <div style="min-width:120px"><div class="tiny muted">VGV</div><div style="font-weight:800;color:var(--accent)">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
         <div style="min-width:100px"><div class="tiny muted">ROI</div><div style="font-weight:800">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
         <div style="min-width:100px"><div class="tiny muted">TIR</div><div class="tiny muted">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
       </div>
@@ -749,25 +777,23 @@ function openProjectModal(id){
   document.getElementById('modalCity').innerText = p.city;
   document.getElementById('modalVgv').innerText = d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
 
-  // stats grid
   document.getElementById('modalStats').innerHTML = `
-    <div class="stat"><div class="tiny muted">ROI</div><div style="font-weight:800;color:var(--gold)">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
-    <div class="stat"><div class="tiny muted">TIR (a.a.)</div><div style="font-weight:800;color:var(--gold)">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
+    <div class="stat"><div class="tiny muted">ROI</div><div style="font-weight:800;color:var(--accent)">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
+    <div class="stat"><div class="tiny muted">TIR (a.a.)</div><div style="font-weight:800;color:var(--accent)">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
     <div class="stat"><div class="tiny muted">VPL (12% a.a.)</div><div style="font-weight:800">${fmt(d.npvVal)}</div></div>
-    <div class="stat"><div class="tiny muted">Payback</div><div style="font-weight:800;color:var(--gold)">${d.payback} meses</div></div>
+    <div class="stat"><div class="tiny muted">Payback</div><div style="font-weight:800;color:var(--accent)">${d.payback} meses</div></div>
     <div class="stat"><div class="tiny muted">Custo construção</div><div style="font-weight:800">${fmt(d.totalConstruction)}</div></div>
     <div class="stat"><div class="tiny muted">Marketing</div><div style="font-weight:800">${fmt(d.marketingTotal)}</div></div>
     <div class="stat"><div class="tiny muted">Comissão</div><div style="font-weight:800">${fmt(d.brokerTotal)}</div></div>
     <div class="stat"><div class="tiny muted">Unidades</div><div style="font-weight:800">${p.units}</div></div>
     <div class="stat"><div class="tiny muted">Área total</div><div style="font-weight:800">${(p.units * p.area).toLocaleString('pt-BR')} m²</div></div>
     <div class="stat"><div class="tiny muted">Receita média/unidade</div><div style="font-weight:800">${fmt(d.VGV / p.units)}</div></div>
-    <div class="stat"><div class="tiny muted">Lucro estimado</div><div style="font-weight:800;color:var(--gold)">${fmt(d.VGV - d.totalConstruction - d.marketingTotal - d.brokerTotal)}</div></div>
+    <div class="stat"><div class="tiny muted">Lucro estimado</div><div style="font-weight:800;color:var(--accent)">${fmt(d.VGV - d.totalConstruction - d.marketingTotal - d.brokerTotal)}</div></div>
   `;
 
   document.getElementById('detailModal').style.display = 'flex';
   destroyModalCharts();
 
-  // build charts
   modalCharts.fluxo = createModalChart(document.getElementById('chartFluxo').getContext('2d'), [
     {label:'Fluxo Líquido', data:d.net, borderColor:colors[0], backgroundColor:'rgba(201,168,75,0.06)', fill:true, tension:0.3}
   ]);
@@ -788,7 +814,6 @@ function openProjectModal(id){
   setActiveTab('fluxo');
 }
 
-/* modal tabs */
 document.querySelectorAll('#modalTabs .tab-btn').forEach(btn=>{
   btn.addEventListener('click',()=>{
     const tab=btn.dataset.tab;
@@ -820,7 +845,7 @@ function toast(msg, ms=1600){
 }
 
 /* -------------------------
-   UI wiring & events (debounced)
+   UI wiring & events
    ------------------------- */
 const debounce = (fn, wait=250)=>{ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), wait); }; };
 
@@ -830,8 +855,6 @@ document.getElementById('btnPublish').addEventListener('click', saveAll);
 document.getElementById('btnReset').addEventListener('click', ()=>{ if(confirm('Restaurar valores iniciais?')){ localStorage.removeItem('aps_projects'); localStorage.removeItem(cfgKey); location.reload(); }});
 document.getElementById('btnNew').addEventListener('click', ()=>{ const id=projects.length+1; projects.push({id:id,name:'Novo Empreendimento '+id,city:'Cidade',units:10,area:70,price_m2:5000,cost_m2:2000,months:18,pre_launch_sales:0,launch_sales:0,monthly_sales:2}); renderSidebar(); });
 document.getElementById('search').addEventListener('input', debounce(()=>renderSidebar(),200));
-
-// attach saveCfg on config inputs with debounce
 ['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths','preLaunchMonths','launchMonths','incc','ipca','payUpfrontPct','payIntermediatePct','intermediateMonths','payOnDeliveryPct'].forEach(id=>{
   const el=document.getElementById(id);
   if(el) el.addEventListener('change', debounce(saveCfg,200));
@@ -849,7 +872,6 @@ document.getElementById('btnLogin').addEventListener('click', () => {
     loadCfg();
     renderSidebar();
   } else {
-    // shake effect
     box.animate([{transform:'translateX(-10px)'},{transform:'translateX(10px)'},{transform:'translateX(0)'}],{duration:300});
     box.style.boxShadow = '0 0 15px rgba(244,67,54,0.6)';
     setTimeout(()=> box.style.boxShadow='0 0 15px rgba(201,168,75,0.4)', 300);
@@ -868,9 +890,68 @@ function loadSavedProjects(){
 }
 
 /* -------------------------
-   Helper: escape html for project names
+   Theme selector
+   ------------------------- */
+const themeSelect = document.getElementById('themeSelect');
+themeSelect.addEventListener('change', ()=>{ const t = themeSelect.value; document.body.className = 'theme-' + t; localStorage.setItem('apsp_theme', t); });
+window.addEventListener('load', ()=>{ const t = localStorage.getItem('apsp_theme') || 'royal'; themeSelect.value = t; document.body.className = 'theme-' + t; });
+
+/* -------------------------
+   Utility panel actions
+   ------------------------- */
+document.getElementById('btnResetLocal').addEventListener('click', ()=>{ if(confirm('Limpar localStorage e recarregar?')){ localStorage.clear(); location.reload(); }});
+document.getElementById('btnPrint').addEventListener('click', ()=> window.print());
+document.getElementById('btnExportCSV').addEventListener('click', ()=>{
+  const rows=[['Label','Valor']];
+  if(mainChart){
+    mainChart.data.labels.forEach((lab,i)=> rows.push([lab, mainChart.data.datasets[0].data[i]]));
+  }
+  const csv = rows.map(r=>r.join(',')).join('\\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'export.csv'; a.click(); URL.revokeObjectURL(a.href);
+});
+
+/* -------------------------
+   Report generation
+   ------------------------- */
+document.getElementById('btnGenerateReport').addEventListener('click', ()=>{
+  const win = window.open('', '_blank');
+  const chartData = mainChart ? mainChart.toBase64Image() : '';
+  const labels = mainChart ? mainChart.data.labels : [];
+  const data = mainChart ? mainChart.data.datasets[0].data : [];
+  win.document.write(`
+    <html>
+    <head><title>Relatório Premium - Simulação</title>
+      <style>
+        body{font-family:Arial;padding:40px;background:#f7f7f7;color:#222}
+        h1{text-align:center;color:#111}
+        .section{background:#fff;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+        .chart-img{display:block;margin:20px auto;max-width:900px;border-radius:12px}
+        table{width:100%;border-collapse:collapse}
+        th,td{padding:8px;border:1px solid #ddd;text-align:left}
+      </style>
+    </head>
+    <body>
+      <h1>Relatório Premium - APSPARCEIROS Invest</h1>
+      <div class="section"><h2>Resumo</h2><p>Relatório gerado automaticamente com os principais indicadores e gráfico consolidado.</p></div>
+      <div class="section"><h2>Gráfico Consolidado</h2>${chartData?`<img src="${chartData}" class="chart-img">`:`<p>Sem gráfico disponível</p>`}</div>
+      <div class="section"><h2>Dados</h2>
+        <table><thead><tr><th>Mês</th><th>Valor</th></tr></thead><tbody>
+        ${labels.map((lab,i)=>`<tr><td>${lab}</td><td>${(data[i]||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</td></tr>`).join('')}
+        </tbody></table>
+      </div>
+      <script>setTimeout(()=>window.print(),300)</script>
+    </body>
+    </html>
+  `);
+  win.document.close();
+});
+
+/* -------------------------
+   Helpers
    ------------------------- */
 function escapeHtml(s){ return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function varOr(def){ return def; }
 
 /* -------------------------
    Initial boot
