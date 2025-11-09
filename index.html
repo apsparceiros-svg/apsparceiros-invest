@@ -258,14 +258,26 @@ html,body{
         <label>Meses Lançamento</label>
         <input id="launchMonths" type="number" min="1" step="1" value="3">
 
+        <label>Pagamento no ato (%)</label>
+        <input id="payAtoPct" type="number" min="0" max="100" step="0.1" value="0">
+
         <label>Entrada (%)</label>
         <input id="entradaPct" type="number" min="0" max="100" step="0.1" value="30">
 
         <label>Parcelas da entrada (nº)</label>
         <input id="entradaMonths" type="number" min="1" step="1" value="6">
 
+        <label>Pagamento intermediário (%)</label>
+        <input id="payInterPct" type="number" min="0" max="100" step="0.1" value="0">
+
+        <label>Mês do pagamento intermediário</label>
+        <input id="payInterMonth" type="number" min="0" step="1" value="6">
+
         <label>Parcelas do saldo (nº)</label>
         <input id="parcelasRestantes" type="number" min="1" step="1" value="24">
+
+        <label>Pagamento na entrega das chaves (%)</label>
+        <input id="payChavesPct" type="number" min="0" max="100" step="0.1" value="0">
 
         <label>Correção INCC (%)</label>
         <input id="incc" type="number" min="0" step="0.001" value="0.0045">
@@ -397,9 +409,20 @@ const colors=['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 
 // ===== Persistência das configurações de venda =====
 const cfgKey = 'aps_sale_cfg';
-let saleCfg = { 
-  discountPre:10, discountLaunch:5, parcelasRestantes:24, entradaPct:30, entradaMonths:6,
-  preLaunchMonths:2, launchMonths:3, incc:0.0045, ipca:0.005
+let saleCfg = {
+  discountPre:10,
+  discountLaunch:5,
+  parcelasRestantes:24,
+  entradaPct:30,
+  entradaMonths:6,
+  payAtoPct: 0,
+  payInterPct: 0,
+  payInterMonth: 6,
+  payChavesPct: 0,
+  preLaunchMonths:2,
+  launchMonths:3,
+  incc:0.0045,
+  ipca:0.005
 };
 
 function loadCfg(){
@@ -414,6 +437,10 @@ function loadCfg(){
   document.getElementById('launchMonths').value = saleCfg.launchMonths;
   document.getElementById('incc').value = saleCfg.incc ?? 0.0045;
   document.getElementById('ipca').value = saleCfg.ipca ?? 0.005;
+  document.getElementById('payAtoPct').value = saleCfg.payAtoPct;
+  document.getElementById('payInterPct').value = saleCfg.payInterPct;
+  document.getElementById('payInterMonth').value = saleCfg.payInterMonth;
+  document.getElementById('payChavesPct').value = saleCfg.payChavesPct;
 }
 
 function saveCfg(){
@@ -426,6 +453,10 @@ function saveCfg(){
   saleCfg.launchMonths = Math.max(1, Math.floor(Number(document.getElementById('launchMonths').value) || 3));
   saleCfg.incc = Number(document.getElementById('incc').value) || 0.0045;
   saleCfg.ipca = Number(document.getElementById('ipca').value) || 0.005;
+  saleCfg.payAtoPct = Number(document.getElementById('payAtoPct').value) || 0;
+  saleCfg.payInterPct = Number(document.getElementById('payInterPct').value) || 0;
+  saleCfg.payInterMonth = Number(document.getElementById('payInterMonth').value) || 0;
+  saleCfg.payChavesPct = Number(document.getElementById('payChavesPct').value) || 0;
   localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
   renderSidebar();
 }
@@ -472,11 +503,38 @@ function computeProject(p) {
     const entradaMonths = cfg.entradaMonths || 6;
     const entradaTotal = price_unit*entradaPct;
     const entradaParcel = entradaTotal/entradaMonths;
-    const restantePct = 1 - entradaPct;
+    const restantePct = 1 - (pagAtoPct + pagInterPct + pagChavesPct + entradaPct);
     const restanteTotal = price_unit*restantePct;
     const restParc = cfg.parcelasRestantes || 24;
     const incc = Number(cfg.incc || 0.0045);
     const ipca = Number(cfg.ipca || 0.004);
+    const pagAtoPct = (cfg.payAtoPct || 0)/100;
+    const pagInterPct = (cfg.payInterPct || 0)/100;
+    const pagChavesPct = (cfg.payChavesPct || 0)/100;
+    const entradaPct = (cfg.entradaPct || 0)/100;
+
+    let restantePct = 1 - (pagAtoPct + pagInterPct + pagChavesPct + entradaPct);
+    if (restantePct < 0) restantePct = 0;
+    
+let pagAtoValor = price_unit * pagAtoPct;
+if (pagAtoValor > 0) {
+    ensureLen(targetArray, saleMonth + 1);
+    targetArray[saleMonth] += pagAtoValor;
+}
+
+let pagInterValor = price_unit * pagInterPct;
+if (pagInterValor > 0) {
+    const interMonth = saleMonth + (cfg.payInterMonth || 0);
+    ensureLen(targetArray, interMonth + 1);
+    targetArray[interMonth] += pagInterValor;
+}
+
+let pagChavesValor = price_unit * pagChavesPct;
+if (pagChavesValor > 0) {
+    const chavesMonth = p.months;
+    ensureLen(targetArray, chavesMonth + 1);
+    targetArray[chavesMonth] += pagChavesValor;
+}
 
     function projCorr(mes){ 
       if(mes<p.months) return Math.pow(1+incc, mes-saleMonth);
