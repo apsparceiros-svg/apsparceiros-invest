@@ -520,7 +520,10 @@ function computeProject(p) {
   const incc = Number(cfg.incc || 0.0045);
   const ipca = Number(cfg.ipca || 0.005);
 
-  const receiptsMap = []; // array de objetos: {ato, inter, entrada, chaves, saldo, total}
+  // Arrays de receitas separadas por tipo
+  const receiptsPre = [];
+  const receiptsLaunch = [];
+  const receiptsMonthly = [];
 
   function projCorrMes(mes, saleMonth) {
     if (!cfg.applyProjection) return 1;
@@ -532,29 +535,26 @@ function computeProject(p) {
     }
   }
 
-  function addReceipt(month, type, value) {
-    while (receiptsMap.length <= month) {
-      receiptsMap.push({ ato: 0, inter: 0, entrada: 0, chaves: 0, saldo: 0, total: 0 });
-    }
-    receiptsMap[month][type] += value;
-    receiptsMap[month].total += value;
+  function addReceipt(arr, month, value) {
+    while(arr.length <= month) arr.push(0);
+    arr[month] += value;
   }
 
-  function distributeUnit(saleMonth, price_unit) {
+  function distributeUnit(saleMonth, price_unit, targetArray) {
     // Pagamento no ato
-    if (pctAto > 0) addReceipt(saleMonth, 'ato', price_unit * pctAto);
+    if (pctAto > 0) addReceipt(targetArray, saleMonth, price_unit * pctAto);
 
     // Pagamento intermediário (parcelado 1x)
-    if (pctInter > 0) addReceipt(saleMonth + cfg.payInterMonth, 'inter', price_unit * pctInter);
+    if (pctInter > 0) addReceipt(targetArray, saleMonth + cfg.payInterMonth, price_unit * pctInter);
 
     // Pagamento de chaves (na entrega)
-    if (pctChaves > 0) addReceipt(p.months, 'chaves', price_unit * pctChaves);
+    if (pctChaves > 0) addReceipt(targetArray, p.months, price_unit * pctChaves);
 
     // Entrada parcelada
     if (pctEntrada > 0) {
       const parcela = (price_unit * pctEntrada) / entradaMonths;
       for (let m = 0; m < entradaMonths; m++) {
-        addReceipt(saleMonth + m, 'entrada', parcela);
+        addReceipt(targetArray, saleMonth + m, parcela);
       }
     }
 
@@ -564,61 +564,55 @@ function computeProject(p) {
     const saldoTotal = price_unit * restantePct;
     const saldoParc = saldoTotal / restParc;
     for (let m = 0; m < restParc; m++) {
-      addReceipt(saleMonth + entradaMonths + m, 'saldo', saldoParc);
+      addReceipt(targetArray, saleMonth + entradaMonths + m, saldoParc);
     }
   }
 
-  function distributeUnits(units, startMonth, periodMonths, discount = 0) {
+  function distributeUnits(units, startMonth, periodMonths, discount = 0, targetArray) {
     if (units <= 0) return;
     periodMonths = Math.max(1, Math.floor(periodMonths || 1));
     for (let u = 0; u < units; u++) {
       const monthOffset = Math.floor(u * periodMonths / units);
       const saleMonth = startMonth + monthOffset;
       const price_unit = price_unit_full * (1 - discount / 100);
-      distributeUnit(saleMonth, price_unit);
+      distributeUnit(saleMonth, price_unit, targetArray);
     }
   }
 
   // Distribuição das vendas
-  distributeUnits(p.pre_launch_sales || 0, 0, cfg.preLaunchMonths || 1, cfg.discountPre || 0);
-  distributeUnits(p.launch_sales || 0, cfg.preLaunchMonths || 0, cfg.launchMonths || 1, cfg.discountLaunch || 0);
+  distributeUnits(p.pre_launch_sales || 0, 0, cfg.preLaunchMonths || 1, cfg.discountPre || 0, receiptsPre);
+  distributeUnits(p.launch_sales || 0, cfg.preLaunchMonths || 0, cfg.launchMonths || 1, cfg.discountLaunch || 0, receiptsLaunch);
 
   let unitsAssigned = (p.pre_launch_sales || 0) + (p.launch_sales || 0);
   let monthIdx = (cfg.preLaunchMonths || 0) + (cfg.launchMonths || 0);
   while (unitsAssigned < p.units) {
     const unitsRemaining = p.units - unitsAssigned;
     const unitsThisMonth = Math.min(p.monthly_sales || 1, unitsRemaining);
-    distributeUnits(unitsThisMonth, monthIdx, 1, 0);
+    distributeUnits(unitsThisMonth, monthIdx, 1, 0, receiptsMonthly);
     unitsAssigned += unitsThisMonth;
     monthIdx++;
     if (monthIdx > 5000) break;
   }
 
-  const finalLen = receiptsMap.length;
+  const maxLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length);
 
-  // Aplica projeção
-  const receiptsProjected = receiptsMap.map((r, i) => {
-    const factor = projCorrMes(i, 0);
-    return {
-      ato: r.ato * factor,
-      inter: r.inter * factor,
-      entrada: r.entrada * factor,
-      chaves: r.chaves * factor,
-      saldo: r.saldo * factor,
-      total: r.total * factor
-    };
-  });
+  // Normaliza arrays
+  while (receiptsPre.length < maxLen) receiptsPre.push(0);
+  while (receiptsLaunch.length < maxLen) receiptsLaunch.push(0);
+  while (receiptsMonthly.length < maxLen) receiptsMonthly.push(0);
 
-  // Investimentos mensais (simplificado)
+  // Fluxo líquido
+  const net = [];
   const investments = [];
-  const den = (p.months * (p.months + 1)) / 2;
-  for (let m = 1; m <= finalLen; m++) {
-    investments[m - 1] = m <= p.months ? (totalConstruction * (m / den)) * Math.pow(1 + incc, m) : 0;
-  }
-
-  // Custos operacionais
   const costs = [];
-  for (let m = 0; m < finalLen; m++) {
+  const den = (p.months * (p.months + 1)) / 2;
+
+  for (let m = 0; m < maxLen; m++) {
+    // Receita total do mês
+    const totalReceita = (receiptsPre[m] || 0) + (receiptsLaunch[m] || 0) + (receiptsMonthly[m] || 0);
+    // Investimentos mensais
+    investments[m] = m < p.months ? (totalConstruction * ((m + 1) / den)) * Math.pow(1 + incc, m + 1) : 0;
+    // Custos operacionais
     if (m < p.months) {
       let c = 0;
       const marketingTotal = 0.015 * VGV;
@@ -627,12 +621,11 @@ function computeProject(p) {
       if (m === 0) c += 0.05 * totalConstruction;
       costs[m] = c;
     } else costs[m] = 0;
+    // Fluxo líquido
+    net[m] = totalReceita - (investments[m] || 0) - (costs[m] || 0);
   }
 
-  // Fluxo líquido
-  const net = receiptsProjected.map((r, i) => r.total - (investments[i] || 0) - (costs[i] || 0));
-
-  // Métricas
+  // Métricas financeiras
   const irrMonthly = irr(net);
   const irrAnnual = isFinite(irrMonthly) ? Math.pow(1 + irrMonthly, 12) - 1 : NaN;
   const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
@@ -651,22 +644,13 @@ function computeProject(p) {
   const marketingTotal = 0.015 * VGV;
   const brokerTotal = 0.05 * VGV;
 
-  // Mapa visual de recebimentos
-  const receiptsVisual = receiptsProjected.map(r => ({
-    ato: r.ato,
-    inter: r.inter,
-    entrada: r.entrada,
-    chaves: r.chaves,
-    saldo: r.saldo,
-    total: r.total
-  }));
-
   return {
-    receiptsVisual,
-    receipts: receiptsProjected.map(r => r.total),
+    receiptsPre,
+    receiptsLaunch,
+    receiptsMonthly,
+    net,
     investments,
     costs,
-    net,
     irrMonthly,
     irrAnnual,
     npvVal,
