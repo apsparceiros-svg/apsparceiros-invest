@@ -593,13 +593,15 @@ function computeProject(p) {
     net[m] = totalReceita - (investments[m] || 0) - (costs[m] || 0);
   }
 
-  // Payback correto
-  let cumulCash = 0, cumulInvest = 0, payback = '--';
-  for (let m = 0; m < maxLen; m++) {
-    cumulCash += (receiptsPre[m] || 0) + (receiptsLaunch[m] || 0) + (receiptsMonthly[m] || 0);
-    cumulInvest += investments[m] || 0;
-    if (cumulCash >= cumulInvest) { payback = m + 1; break; }
+  // Payback correto usando fluxo líquido
+let cumul = 0, payback = '--';
+for (let i = 0; i < net.length; i++) {
+  cumul += net[i];  // <- acumulando net, não só receitas
+  if (cumul >= 0) {
+    payback = i + 1;
+    break;
   }
+}
 
   // TIR mensal e anual
   const irrMonthly = irr(net);
