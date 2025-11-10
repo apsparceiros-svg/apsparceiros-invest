@@ -506,15 +506,9 @@ function irr(values, guess = 0.01) {
 // ===== Função principal de cálculo do projeto (refatorada) =====
 function computeProject(p) {
   const cfg = saleCfg;
-  const months = Math.max(1, Math.floor(p.months || 0));
   const price_unit_full = p.area * p.price_m2;
   const VGV = p.units * price_unit_full;
   const totalConstruction = p.units * p.area * p.cost_m2;
-
-  // Arrays de recebimentos unitários
-  const receipts = [];
-  const investments = [];
-  const costs = [];
 
   // Percentuais convertidos para fração
   const pctAto = (cfg.payAtoPct || 0) / 100;
@@ -526,51 +520,68 @@ function computeProject(p) {
   const incc = Number(cfg.incc || 0.0045);
   const ipca = Number(cfg.ipca || 0.005);
 
-  // Aplica projeção
+  const receiptsMap = []; // array de objetos: {ato, inter, entrada, chaves, saldo, total}
+
   function projCorrMes(mes, saleMonth) {
     if (!cfg.applyProjection) return 1;
     if (mes < p.months) {
       return Math.pow(1 + incc, mes - saleMonth);
     } else {
-      return Math.pow(1 + incc, Math.max(0, p.months - saleMonth)) * Math.pow(1 + ipca, Math.max(0, mes - p.months));
+      return Math.pow(1 + incc, Math.max(0, p.months - saleMonth)) *
+             Math.pow(1 + ipca, Math.max(0, mes - p.months));
     }
   }
 
-  // Adiciona valores ao array por mês
-  function addToMonth(arr, month, value) {
-    while (arr.length <= month) arr.push(0);
-    arr[month] += value;
+  function addReceipt(month, type, value) {
+    while (receiptsMap.length <= month) {
+      receiptsMap.push({ ato: 0, inter: 0, entrada: 0, chaves: 0, saldo: 0, total: 0 });
+    }
+    receiptsMap[month][type] += value;
+    receiptsMap[month].total += value;
   }
 
-  // Distribui unidades vendidas
+  function distributeUnit(saleMonth, price_unit) {
+    // Pagamento no ato
+    if (pctAto > 0) addReceipt(saleMonth, 'ato', price_unit * pctAto);
+
+    // Pagamento intermediário (parcelado 1x)
+    if (pctInter > 0) addReceipt(saleMonth + cfg.payInterMonth, 'inter', price_unit * pctInter);
+
+    // Pagamento de chaves (na entrega)
+    if (pctChaves > 0) addReceipt(p.months, 'chaves', price_unit * pctChaves);
+
+    // Entrada parcelada
+    if (pctEntrada > 0) {
+      const parcela = (price_unit * pctEntrada) / entradaMonths;
+      for (let m = 0; m < entradaMonths; m++) {
+        addReceipt(saleMonth + m, 'entrada', parcela);
+      }
+    }
+
+    // Saldo restante parcelado
+    let restantePct = 1 - (pctAto + pctInter + pctChaves + pctEntrada);
+    if (restantePct < 0) restantePct = 0;
+    const saldoTotal = price_unit * restantePct;
+    const saldoParc = saldoTotal / restParc;
+    for (let m = 0; m < restParc; m++) {
+      addReceipt(saleMonth + entradaMonths + m, 'saldo', saldoParc);
+    }
+  }
+
   function distributeUnits(units, startMonth, periodMonths, discount = 0) {
     if (units <= 0) return;
     periodMonths = Math.max(1, Math.floor(periodMonths || 1));
     for (let u = 0; u < units; u++) {
       const monthOffset = Math.floor(u * periodMonths / units);
       const saleMonth = startMonth + monthOffset;
-      let price_unit = price_unit_full * (1 - discount / 100);
-
-      // Pagamentos unitários
-      addToMonth(receipts, saleMonth, price_unit * pctAto); // Pagamento no ato
-      if (pctInter > 0) addToMonth(receipts, saleMonth + cfg.payInterMonth, price_unit * pctInter); // Pagamento intermediário
-      if (pctChaves > 0) addToMonth(receipts, p.months, price_unit * pctChaves); // Pagamento na entrega
-      if (pctEntrada > 0) {
-        const parcela = (price_unit * pctEntrada) / entradaMonths;
-        for (let m = 0; m < entradaMonths; m++) addToMonth(receipts, saleMonth + m, parcela); // Entrada parcelada
-      }
-      // Saldo restante
-      let restantePct = 1 - (pctAto + pctInter + pctChaves + pctEntrada);
-      if (restantePct < 0) restantePct = 0;
-      const restanteTotal = price_unit * restantePct;
-      const saldoParc = restanteTotal / restParc;
-      for (let m = 0; m < restParc; m++) addToMonth(receipts, saleMonth + entradaMonths + m, saldoParc);
+      const price_unit = price_unit_full * (1 - discount / 100);
+      distributeUnit(saleMonth, price_unit);
     }
   }
 
   // Distribuição das vendas
-  distributeUnits(p.pre_launch_sales || 0, 0, cfg.preLaunchMonths, cfg.discountPre);
-  distributeUnits(p.launch_sales || 0, cfg.preLaunchMonths || 0, cfg.launchMonths, cfg.discountLaunch);
+  distributeUnits(p.pre_launch_sales || 0, 0, cfg.preLaunchMonths || 1, cfg.discountPre || 0);
+  distributeUnits(p.launch_sales || 0, cfg.preLaunchMonths || 0, cfg.launchMonths || 1, cfg.discountLaunch || 0);
 
   let unitsAssigned = (p.pre_launch_sales || 0) + (p.launch_sales || 0);
   let monthIdx = (cfg.preLaunchMonths || 0) + (cfg.launchMonths || 0);
@@ -583,31 +594,43 @@ function computeProject(p) {
     if (monthIdx > 5000) break;
   }
 
-  const finalLen = Math.max(receipts.length, months + 1, p.months + 1);
+  const finalLen = receiptsMap.length;
+
+  // Aplica projeção
+  const receiptsProjected = receiptsMap.map((r, i) => {
+    const factor = projCorrMes(i, 0);
+    return {
+      ato: r.ato * factor,
+      inter: r.inter * factor,
+      entrada: r.entrada * factor,
+      chaves: r.chaves * factor,
+      saldo: r.saldo * factor,
+      total: r.total * factor
+    };
+  });
 
   // Investimentos mensais (simplificado)
-  const den = (months * (months + 1)) / 2;
+  const investments = [];
+  const den = (p.months * (p.months + 1)) / 2;
   for (let m = 1; m <= finalLen; m++) {
-    investments[m - 1] = m <= months ? (totalConstruction * (m / den)) * Math.pow(1 + incc, m) : 0;
+    investments[m - 1] = m <= p.months ? (totalConstruction * (m / den)) * Math.pow(1 + incc, m) : 0;
   }
 
   // Custos operacionais
+  const costs = [];
   for (let m = 0; m < finalLen; m++) {
-    if (m < months) {
+    if (m < p.months) {
       let c = 0;
       const marketingTotal = 0.015 * VGV;
-      c += marketingTotal / months + 8000 + 3000;
+      c += marketingTotal / p.months + 8000 + 3000;
       if (m === 11) c += 0.01 * VGV;
       if (m === 0) c += 0.05 * totalConstruction;
       costs[m] = c;
     } else costs[m] = 0;
   }
 
-  // Aplica projeção se configurado
-  const receiptsProjected = receipts.map((r, i) => r * projCorrMes(i, 0));
-
   // Fluxo líquido
-  const net = receiptsProjected.map((r, i) => r - (investments[i] || 0) - (costs[i] || 0));
+  const net = receiptsProjected.map((r, i) => r.total - (investments[i] || 0) - (costs[i] || 0));
 
   // Métricas
   const irrMonthly = irr(net);
@@ -628,11 +651,19 @@ function computeProject(p) {
   const marketingTotal = 0.015 * VGV;
   const brokerTotal = 0.05 * VGV;
 
+  // Mapa visual de recebimentos
+  const receiptsVisual = receiptsProjected.map(r => ({
+    ato: r.ato,
+    inter: r.inter,
+    entrada: r.entrada,
+    chaves: r.chaves,
+    saldo: r.saldo,
+    total: r.total
+  }));
+
   return {
-    receiptsPre: receiptsProjected.slice(0, cfg.preLaunchMonths),
-    receiptsLaunch: receiptsProjected.slice(cfg.preLaunchMonths, cfg.preLaunchMonths + cfg.launchMonths),
-    receiptsMonthly: receiptsProjected.slice(cfg.preLaunchMonths + cfg.launchMonths),
-    receipts: receiptsProjected,
+    receiptsVisual,
+    receipts: receiptsProjected.map(r => r.total),
     investments,
     costs,
     net,
