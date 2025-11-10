@@ -412,93 +412,603 @@ html,body{
 
 // ---------- Dados iniciais (exemplo) ----------
 let projects = [
-{id:1,name:"Residencial Ubatuba Premium",city:"Ubatuba - SP",units:30,area:80,price_m2:7000,cost_m2:2800,months:24,pre_launch_sales:2,launch_sales:4,monthly_sales:3},
-{id:2,name:"Residencial Caraguá Vista",city:"Caraguá - SP",units:24,area:75,price_m2:6500,cost_m2:2600,months:22,pre_launch_sales:1,launch_sales:3,monthly_sales:3},
-{id:3,name:"Residencial Guarujá Prime",city:"Guarujá - SP",units:36,area:90,price_m2:7200,cost_m2:3000,months:28,pre_launch_sales:3,launch_sales:5,monthly_sales:4}
+  {id:1,name:"Residencial Ubatuba Premium",city:"Ubatuba - SP",units:30,area:80,price_m2:7000,cost_m2:2800,months:24,pre_launch_sales:2,launch_sales:4,monthly_sales:3},
+  {id:2,name:"Residencial Caraguá Vista",city:"Caraguá - SP",units:24,area:75,price_m2:6500,cost_m2:2600,months:22,pre_launch_sales:1,launch_sales:3,monthly_sales:3},
+  {id:3,name:"Residencial Guarujá Prime",city:"Guarujá - SP",units:36,area:90,price_m2:7200,cost_m2:3000,months:28,pre_launch_sales:3,launch_sales:5,monthly_sales:4}
 ];
 const PASSWORD = "Investidor";
 const colors = ['#c9a84b','#b58f3a','#d9b86b','#8bc34a','#2196f3','#9c27b0'];
 
-
 // ---------- Configurações persistentes e realismo financeiro ----------
 const cfgKey = 'aps_sale_cfg_v2';
 let saleCfg = {
-discountPre:10,
-discountLaunch:5,
-parcelasRestantes:24,
-entradaPct:30,
-entradaMonths:6,
-payAtoPct: 0,
-payInterPct: 0,
-payInterMonth: 6,
-payChavesPct: 0,
-preLaunchMonths:2,
-launchMonths:3,
-incc:0.0045, // índice obra mensal
-ipca:0.005, // índice pós-obra mensal
-applyProjection: false,
-// parâmetros "realistas" adicionais (padrões razoáveis)
-brokerPct:0.05, // comissão total sobre receitas (padrão 5%)
-taxesPct:0.06, // impostos sobre receita (ISS + outros) exemplo 6%
-contingencyPct:0.03, // contingência sobre custo de obra
-landPct:0.08 // custo do terreno como pct do VGV (apenas se desejado)
+  discountPre:10,
+  discountLaunch:5,
+  parcelasRestantes:24,
+  entradaPct:30,
+  entradaMonths:6,
+  payAtoPct: 0,
+  payInterPct: 0,
+  payInterMonth: 6,
+  payChavesPct: 0,
+  preLaunchMonths:2,
+  launchMonths:3,
+  incc:0.0045,              // índice obra mensal
+  ipca:0.005,               // índice pós-obra mensal
+  applyProjection: false,
+  // parâmetros "realistas" adicionais (padrões razoáveis)
+  brokerPct:0.05,           // comissão total sobre receitas (padrão 5%)
+  taxesPct:0.06,            // impostos sobre receita (ISS + outros) exemplo 6%
+  contingencyPct:0.03,      // contingência sobre custo de obra
+  landPct:0.08              // custo do terreno como pct do VGV (apenas se desejado)
 };
-
 
 // Carrega configuração para inputs existentes sem quebrar se inputs novos não existirem
 function loadCfg(){
-const s = localStorage.getItem(cfgKey);
-if(s) try { saleCfg = Object.assign(saleCfg, JSON.parse(s)); } catch(e){}
-// campos conhecidos do HTML original — se existirem, preenche
-['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths','preLaunchMonths','launchMonths','incc','ipca','payAtoPct','payInterPct','payInterMonth','payChavesPct']
-.forEach(id => {
-const el = document.getElementById(id);
-if(el && typeof saleCfg[id] !== 'undefined') el.value = saleCfg[id];
-});
+  const s = localStorage.getItem(cfgKey);
+  if(s) try { saleCfg = Object.assign(saleCfg, JSON.parse(s)); } catch(e){}
+  // campos conhecidos do HTML original — se existirem, preenche
+  ['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths','preLaunchMonths','launchMonths','incc','ipca','payAtoPct','payInterPct','payInterMonth','payChavesPct']
+    .forEach(id => {
+      const el = document.getElementById(id);
+      if(el && typeof saleCfg[id] !== 'undefined') el.value = saleCfg[id];
+    });
 }
-
 
 function saveCfg(){
-const tmp = {
-discountPre: Number(document.getElementById('discountPre')?.value) || saleCfg.discountPre,
-discountLaunch: Number(document.getElementById('discountLaunch')?.value) || saleCfg.discountLaunch,
-parcelasRestantes: Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes')?.value) || saleCfg.parcelasRestantes)),
-entradaPct: Math.min(100, Math.max(0, Number(document.getElementById('entradaPct')?.value) || saleCfg.entradaPct)),
-entradaMonths: Math.max(1, Math.floor(Number(document.getElementById('entradaMonths')?.value) || saleCfg.entradaMonths)),
-preLaunchMonths: Math.max(1, Math.floor(Number(document.getElementById('preLaunchMonths')?.value) || saleCfg.preLaunchMonths)),
-launchMonths: Math.max(1, Math.floor(Number(document.getElementById('launchMonths')?.value) || saleCfg.launchMonths)),
-incc: Number(document.getElementById('incc')?.value) || saleCfg.incc,
-ipca: Number(document.getElementById('ipca')?.value) || saleCfg.ipca,
-payAtoPct: Math.min(100, Math.max(0, Number(document.getElementById('payAtoPct')?.value) || saleCfg.payAtoPct)),
-payInterPct: Math.min(100, Math.max(0, Number(document.getElementById('payInterPct')?.value) || saleCfg.payInterPct)),
-payInterMonth: Math.max(0, Math.floor(Number(document.getElementById('payInterMonth')?.value) || saleCfg.payInterMonth)),
-payChavesPct: Math.min(100, Math.max(0, Number(document.getElementById('payChavesPct')?.value) || saleCfg.payChavesPct)),
-// valores adicionais mais "realistas" (não presentes no layout original)
-brokerPct: saleCfg.brokerPct,
-taxesPct: saleCfg.taxesPct,
-contingencyPct: saleCfg.contingencyPct,
-landPct: saleCfg.landPct
-};
-const soma = tmp.payAtoPct + tmp.payInterPct + tmp.payChavesPct + tmp.entradaPct;
-if(soma > 100) console.warn(`Soma dos percentuais (${soma}%) excede 100% — o restante será tratado como 0%.`);
-Object.assign(saleCfg, tmp);
-localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
-renderSidebar();
+  const tmp = {
+    discountPre: Number(document.getElementById('discountPre')?.value) || saleCfg.discountPre,
+    discountLaunch: Number(document.getElementById('discountLaunch')?.value) || saleCfg.discountLaunch,
+    parcelasRestantes: Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes')?.value) || saleCfg.parcelasRestantes)),
+    entradaPct: Math.min(100, Math.max(0, Number(document.getElementById('entradaPct')?.value) || saleCfg.entradaPct)),
+    entradaMonths: Math.max(1, Math.floor(Number(document.getElementById('entradaMonths')?.value) || saleCfg.entradaMonths)),
+    preLaunchMonths: Math.max(1, Math.floor(Number(document.getElementById('preLaunchMonths')?.value) || saleCfg.preLaunchMonths)),
+    launchMonths: Math.max(1, Math.floor(Number(document.getElementById('launchMonths')?.value) || saleCfg.launchMonths)),
+    incc: Number(document.getElementById('incc')?.value) || saleCfg.incc,
+    ipca: Number(document.getElementById('ipca')?.value) || saleCfg.ipca,
+    payAtoPct: Math.min(100, Math.max(0, Number(document.getElementById('payAtoPct')?.value) || saleCfg.payAtoPct)),
+    payInterPct: Math.min(100, Math.max(0, Number(document.getElementById('payInterPct')?.value) || saleCfg.payInterPct)),
+    payInterMonth: Math.max(0, Math.floor(Number(document.getElementById('payInterMonth')?.value) || saleCfg.payInterMonth)),
+    payChavesPct: Math.min(100, Math.max(0, Number(document.getElementById('payChavesPct')?.value) || saleCfg.payChavesPct)),
+    // valores adicionais mais "realistas" (não presentes no layout original)
+    brokerPct: saleCfg.brokerPct,
+    taxesPct: saleCfg.taxesPct,
+    contingencyPct: saleCfg.contingencyPct,
+    landPct: saleCfg.landPct
+  };
+  const soma = tmp.payAtoPct + tmp.payInterPct + tmp.payChavesPct + tmp.entradaPct;
+  if(soma > 100) console.warn(`Soma dos percentuais (${soma}%) excede 100% — o restante será tratado como 0%.`);
+  Object.assign(saleCfg, tmp);
+  localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
+  renderSidebar();
 }
-
 
 // ---------- Utilitárias ----------
 function ensureLen(arr, len){
-const safeLen = Math.max(0, Math.floor(len));
-while(arr.length < safeLen) arr.push(0);
+  const safeLen = Math.max(0, Math.floor(len));
+  while(arr.length < safeLen) arr.push(0);
 }
 function addToArrayAt(arr, idx, value){
-const i = Math.max(0, Math.floor(idx));
-ensureLen(arr, i+1);
-arr[i] += value;
+  const i = Math.max(0, Math.floor(idx));
+  ensureLen(arr, i+1);
+  arr[i] += value;
 }
+function indexarValor(valor, taxaMensal, meses){
+  return valor * Math.pow(1 + (taxaMensal||0), Math.max(0, meses));
+}
+
+// ---------- IRR robusto ----------
+function irr(values, guess = 0.01) {
+  if (!Array.isArray(values) || values.length === 0) return NaN;
+  const hasPositive = values.some(v => v > 0);
+  const hasNegative = values.some(v => v < 0);
+  if (!hasPositive || !hasNegative) return NaN;
+  // NPV function
+  const npv = (r) => values.reduce((s,v,i)=>s+v/Math.pow(1+r,i),0);
+  // Newton-Raphson with fallback to bisection
+  let x0 = guess;
+  for(let i=0;i<200;i++){
+    const f0 = npv(x0);
+    const h = 1e-6;
+    const f1 = npv(x0 + h);
+    const df = (f1 - f0) / h;
+    if(Math.abs(df) < 1e-12) break;
+    const x1 = x0 - f0/df;
+    if(!isFinite(x1)) break;
+    if(Math.abs(x1-x0) < 1e-9) return x1;
+    x0 = x1;
+  }
+  // bisection search
+  let low = -0.9999, high = 10;
+  let fLow = npv(low), fHigh = npv(high);
+  if(fLow * fHigh > 0) return NaN;
+  for(let i=0;i<200;i++){
+    const mid = (low + high)/2;
+    const fMid = npv(mid);
+    if(Math.abs(fMid) < 1e-7) return mid;
+    if(fLow * fMid <= 0){ high = mid; fHigh = fMid; } else { low = mid; fLow = fMid; }
+  }
+  return (low + high)/2;
+}
+
+// ---------- Função principal de cálculo do projeto (mais realista) ----------
+function computeProject(p) {
+  const cfg = saleCfg;
+  // valores básicos
+  const price_unit_nominal = p.area * p.price_m2; // preço base por unidade (tabela)
+  const VGV = p.units * price_unit_nominal;
+  const totalConstruction = p.units * p.area * p.cost_m2;
+
+  // parâmetros (normalizados)
+  const pctAto = (Number(cfg.payAtoPct) || 0) / 100;
+  const pctInter = (Number(cfg.payInterPct) || 0) / 100;
+  const pctChaves = (Number(cfg.payChavesPct) || 0) / 100;
+  const pctEntrada = (Number(cfg.entradaPct) || 0) / 100;
+  const entradaMonths = Math.max(1, Math.floor(cfg.entradaMonths || 1));
+  const restParc = Math.max(1, Math.floor(cfg.parcelasRestantes || 24));
+  const incc = Number(cfg.incc || 0.0045);
+  const ipca = Number(cfg.ipca || 0.005);
+  const brokerPct = Number(cfg.brokerPct || 0.05);
+  const taxesPct = Number(cfg.taxesPct || 0.06);
+  const contingencyPct = Number(cfg.contingencyPct || 0.03);
+  const landPct = Number(cfg.landPct || 0.08);
+
+  // helpers de indexação: aplica INCC entre venda e entrega, e IPCA depois da entrega
+  function indexFromSaleToPayment(amount, saleMonth, paymentMonth) {
+    if (!cfg.applyProjection) return amount;
+    const sell = Math.max(0, Math.floor(saleMonth));
+    const pay = Math.max(0, Math.floor(paymentMonth));
+    if (pay <= sell) return amount; // pagamento imediato não indexado
+    const endObra = Math.max(0, p.months);
+    // INCC aplicado apenas até entrega
+    const monthsIncc = Math.max(0, Math.min(pay, endObra) - sell);
+    const monthsIpca = pay > endObra ? pay - endObra : 0;
+    return amount * Math.pow(1 + incc, monthsIncc) * Math.pow(1 + ipca, monthsIpca);
+  }
+
+  // arrays de receitas
+  const receiptsPre = [];
+  const receiptsLaunch = [];
+  const receiptsMonthly = [];
+
+  function addReceipt(arr, month, value) {
+    const m = Math.max(0, Math.floor(month));
+    if (!value || value === 0) return;
+    while (arr.length <= m) arr.push(0);
+    arr[m] += value;
+  }
+
+  // distribuição realista de vendas por fase
+  function distributeUnitsRealistic(units, startMonth, periodMonths, discount, targetArray, phase) {
+    units = Math.max(0, Math.floor(units || 0));
+    periodMonths = Math.max(1, Math.floor(periodMonths || 1));
+    // weights for front-loading inside a phase
+    // phase = 'pre'|'launch'|'regular' -> different shapes
+    const weights = [];
+    if (phase === 'pre') {
+      for (let i=0;i<periodMonths;i++) weights.push(1); // relatively flat small volume
+    } else if (phase === 'launch') {
+      // front-loaded: first month heavier
+      for (let i=0;i<periodMonths;i++) weights.push(Math.max(0.1, (periodMonths - i)));
+    } else {
+      for (let i=0;i<periodMonths;i++) weights.push(1); // monthly steady
+    }
+    const totalW = weights.reduce((s,w)=>s+w,0);
+    // price unit after discount (discount is applied on list price)
+    const price_unit = price_unit_nominal * (1 - (discount || 0) / 100);
+
+    // assign units to months proportionally to weights
+    let assigned = 0;
+    for (let u = 0; u < units; u++) {
+      // choose month by proportional allocation
+      const rat = (u + 0.5) / units; // 0..1
+      let cum = 0;
+      for (let m = 0; m < periodMonths; m++) {
+        cum += weights[m] / totalW;
+        if (rat <= cum) {
+          const saleMonth = startMonth + m;
+          distributeUnitRealistic(saleMonth, price_unit, targetArray);
+          assigned++;
+          break;
+        }
+      }
+    }
+    // safety: if rounding left units, distribute them to last month
+    while (assigned < units) { distributeUnitRealistic(startMonth + periodMonths - 1, price_unit, targetArray); assigned++; }
+  }
+
+  // Distribui parcelas de uma unidade de forma realista (ATO/ENTRADA/INTER/SALDO/CHAVES)
+  function distributeUnitRealistic(saleMonth, price_unit, targetArray) {
+    // Ato (contrato) - recebido no mês da venda (ou próximo mês conforme sua regra)
+    if (pctAto > 0) addReceipt(targetArray, saleMonth, price_unit * pctAto);
+
+    // Entrada parcelada: recebida a partir do mês seguinte
+    if (pctEntrada > 0) {
+      const parcela = (price_unit * pctEntrada) / entradaMonths;
+      for (let m = 0; m < entradaMonths; m++) {
+        const payMonth = saleMonth + 1 + m;
+        // entrada normalmente não indexada
+        addReceipt(targetArray, payMonth, parcela);
+      }
+    }
+
+    // intermediária: paga em um mês fixo após venda (por convenção recebemos no mês indicado)
+    if (pctInter > 0) {
+      const payMonth = saleMonth + (cfg.payInterMonth || 0);
+      addReceipt(targetArray, payMonth, price_unit * pctInter);
+    }
+
+    // pagamento na entrega (chaves) — considerado no mês de entrega da obra
+    if (pctChaves > 0) addReceipt(targetArray, p.months, price_unit * pctChaves);
+
+    // saldo restante: parcelado no número de parcelas definidas; essas parcelas sofrem correção por INCC até a entrega
+    let restantePct = 1 - (pctAto + pctInter + pctChaves + pctEntrada);
+    restantePct = Math.max(0, restantePct);
+    const saldoTotalNominal = price_unit * restantePct;
+    if (restParc > 0 && saldoTotalNominal > 0) {
+      const baseParc = saldoTotalNominal / restParc;
+      const startSaldoMonth = saleMonth + 1 + entradaMonths;
+      for (let k = 0; k < restParc; k++) {
+        const payMonth = startSaldoMonth + k;
+        // index only the amount that is paid after saleMonth up to payMonth
+        const indexed = indexFromSaleToPayment(baseParc, saleMonth, payMonth);
+        addReceipt(targetArray, payMonth, indexed);
+      }
+    }
+  }
+
+  // DISTRIBUIÇÃO DE VENDAS REALISTA
+  // Pré-lançamento
+  distributeUnitsRealistic(p.pre_launch_sales || 0, 0, cfg.preLaunchMonths || 1, cfg.discountPre || 0, receiptsPre, 'pre');
+  // Lançamento
+  distributeUnitsRealistic(p.launch_sales || 0, cfg.preLaunchMonths || 0, cfg.launchMonths || 1, cfg.discountLaunch || 0, receiptsLaunch, 'launch');
+
+  // Vendas mensais após fases iniciais (cauda) - usamos ritmo mensal
+  let unitsAssigned = (p.pre_launch_sales || 0) + (p.launch_sales || 0);
+  let monthIdx = (cfg.preLaunchMonths || 0) + (cfg.launchMonths || 0);
+  while (unitsAssigned < p.units) {
+    const unitsRemaining = p.units - unitsAssigned;
+    const unitsThisMonth = Math.min(p.monthly_sales || 1, unitsRemaining);
+    distributeUnitsRealistic(unitsThisMonth, monthIdx, 1, 0, receiptsMonthly, 'regular');
+    unitsAssigned += unitsThisMonth;
+    monthIdx++;
+    if (monthIdx > 5000) break;
+  }
+
+  // assegurar comprimento suficiente
+  const projectedLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, p.months + restParc + 12);
+  const maxLen = Math.max(projectedLen, p.months + 48);
+  while (receiptsPre.length < maxLen) receiptsPre.push(0);
+  while (receiptsLaunch.length < maxLen) receiptsLaunch.push(0);
+  while (receiptsMonthly.length < maxLen) receiptsMonthly.push(0);
+
+  // INVESTIMENTOS: curva S realista — dividido em blocos proporcionais
+  const investments = new Array(maxLen).fill(0);
+  // padrão mais realista (mais peso no meio da obra)
+  const sCurve = [0.10, 0.25, 0.40, 0.25];
+  if (p.months > 0) {
+    let idx = 0;
+    let remainingMonths = p.months;
+    for (let bi = 0; bi < sCurve.length; bi++) {
+      const pct = sCurve[bi];
+      const monthsInBlock = bi < sCurve.length - 1 ? Math.floor(p.months / sCurve.length) : remainingMonths;
+      remainingMonths -= monthsInBlock;
+      if (monthsInBlock <= 0) continue;
+      const monthlyValue = (totalConstruction * pct) / monthsInBlock;
+      for (let m = 0; m < monthsInBlock; m++) {
+        if (idx < maxLen) {
+          // obra incide custos que não são totalmente indexáveis; aplicamos um fator menor de indexação (por ex. 50% do INCC)
+          investments[idx] = monthlyValue * Math.pow(1 + incc * 0.5, idx);
+        }
+        idx++;
+      }
+    }
+  }
+
+  // custos operacionais, marketing e administrativos
+  const costs = new Array(maxLen).fill(0);
+  const marketingTotal = 0.015 * VGV; // 1.5% do VGV (padrão conservador)
+  // distribuímos marketing ao longo do período de comercialização + primeiros meses de obra
+  const marketingStart = 0;
+  const marketingEnd = Math.max((cfg.preLaunchMonths || 0) + (cfg.launchMonths || 0), 6);
+  const marketingDuration = Math.max(1, marketingEnd - marketingStart);
+  const marketingMonthly = marketingTotal / marketingDuration;
+  for (let m = marketingStart; m < marketingStart + marketingDuration && m < maxLen; m++) costs[m] += marketingMonthly;
+
+  // custos fixos (admin, supervisão) distribuídos durante a obra
+  for (let m = 0; m < Math.min(p.months, maxLen); m++){
+    costs[m] += 8000 + 3000; // admin + supervisão
+    if (m === 0) costs[m] += 0.03 * totalConstruction; // mobilização (3%)
+    if (m % 12 === 0 && m < maxLen) costs[m] += 0.01 * VGV; // custo periódico anual
+  }
+
+  // contingência provisionada
+  const contingencyTotal = contingencyPct * totalConstruction;
+  const contMonths = Math.min(6, p.months || 6);
+  const contMonthly = contingencyTotal / Math.max(1, contMonths);
+  for (let m = 0; m < contMonths && m < maxLen; m++) costs[m] += contMonthly;
+
+  // agora calculamos o fluxo: recibos por mês (somando todas as fontes)
+  const receipts = new Array(maxLen).fill(0);
+  for (let m = 0; m < maxLen; m++) receipts[m] = (receiptsPre[m] || 0) + (receiptsLaunch[m] || 0) + (receiptsMonthly[m] || 0);
+
+  // comissões e impostos são calculados sobre a receita efetivamente recebida no mês
+  const commissions = new Array(maxLen).fill(0);
+  const taxes = new Array(maxLen).fill(0);
+  for (let m = 0; m < maxLen; m++){
+    commissions[m] = receipts[m] * brokerPct; // pago quando o caixa entra
+    taxes[m] = receipts[m] * taxesPct;       // impostos sobre o que entrou
+  }
+
+  // construir fluxo líquido mensal
+  const net = new Array(maxLen).fill(0);
+  for (let m = 0; m < maxLen; m++){
+    const inCash = receipts[m] || 0;
+    const outCash = (investments[m] || 0) + (costs[m] || 0) + (commissions[m] || 0) + (taxes[m] || 0);
+    net[m] = inCash - outCash;
+  }
+
+  // métricas
+  const irrMonthly = irr(net);
+  const irrAnnual = isFinite(irrMonthly) ? Math.pow(1 + irrMonthly, 12) - 1 : NaN;
+  const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
+  const npvVal = net.reduce((s, v, i) => s + v / Math.pow(1 + rate, i), 0);
+
+  // payback
+  const cashIn = receipts.slice();
+  const cashOut = new Array(maxLen).fill(0);
+  for (let m = 0; m < maxLen; m++) cashOut[m] = (investments[m] || 0) + (costs[m] || 0) + (commissions[m] || 0) + (taxes[m] || 0);
+  let cumul = 0;
+  let payback = '--';
+  for (let m = 0; m < maxLen; m++){
+    const prev = cumul;
+    const netM = (cashIn[m] || 0) - (cashOut[m] || 0);
+    cumul += netM;
+    if (cumul >= 0){
+      if (prev < 0 && netM > 0){
+        const frac = (0 - prev) / netM;
+        payback = +(m + frac + 0).toFixed(2);
+      } else {
+        payback = m + 1;
+      }
+      break;
+    }
+  }
+
+  const totalNet = net.reduce((s, v) => s + v, 0);
+  const totalInvestment = investments.reduce((s, v) => s + v, 0) + contingencyTotal + (landPct * VGV);
+  const roi = totalInvestment === 0 ? 0 : (totalNet / totalInvestment) * 100;
+  const brokerTotal = brokerPct * VGV;
+
+  return {
+    receiptsPre,
+    receiptsLaunch,
+    receiptsMonthly,
+    receipts,
+    net,
+    investments,
+    costs,
+    commissions,
+    taxes,
+    irrMonthly,
+    irrAnnual,
+    npvVal,
+    payback,
+    roi,
+    VGV,
+    totalConstruction,
+    marketingTotal,
+    brokerTotal
+  };
+}
+
+// ---------- Renderização e gráficos (mantém layout e Chart.js) ----------
+function renderSidebar(){
+  const el = document.getElementById('projectsList'); if(!el) return;
+  el.innerHTML = '';
+  const searchVal = document.getElementById('search')?.value?.toLowerCase() || '';
+  projects.forEach((p) => {
+    if (searchVal && !p.name.toLowerCase().includes(searchVal)) return;
+    const d = computeProject(p);
+    const div = document.createElement('div'); div.className = 'project-card';
+    const info = document.createElement('div'); info.className = 'info';
+    info.innerHTML = `
+      <label><strong>Nome</strong></label>
+      <input type="text" value="${p.name.replace(/"/g,'&quot;')}" data-field="name">
+      <label><strong>Cidade</strong></label>
+      <input type="text" value="${p.city.replace(/"/g,'&quot;')}" data-field="city">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div><label>Unidades</label><input type="number" value="${p.units}" data-field="units"></div>
+        <div><label>Área (m²)</label><input type="number" value="${p.area}" data-field="area"></div>
+        <div><label>Preço/m²</label><input type="number" value="${p.price_m2}" data-field="price_m2"></div>
+        <div><label>Custo/m²</label><input type="number" value="${p.cost_m2}" data-field="cost_m2"></div>
+        <div><label>Meses</label><input type="number" value="${p.months}" data-field="months"></div>
+        <div><label>Pré-lançamento</label><input type="number" value="${p.pre_launch_sales}" data-field="pre_launch_sales"></div>
+        <div><label>Lançamento</label><input type="number" value="${p.launch_sales}" data-field="launch_sales"></div>
+        <div><label>Vendas/mês</label><input type="number" value="${p.monthly_sales}" data-field="monthly_sales"></div>
+      </div>
+      <div class="kpi">
+        <div class="item"><div class="small">VGV</div><div class="value">${d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+        <div class="item"><div class="small">ROI</div><div class="value">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
+        <div class="item"><div class="small">TIR</div><div class="value">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
+      </div>
+    `;
+    info.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('click', e => e.stopPropagation());
+      const handleUpdate = () => {
+        const field = inp.dataset.field;
+        if (['units','area','price_m2','cost_m2','months','pre_launch_sales','launch_sales','monthly_sales'].includes(field)) {
+          p[field] = Number(inp.value);
+        } else {
+          p[field] = inp.value;
+        }
+        renderSidebar();
+        if (document.getElementById('detailModal')?.style.display === 'flex') openProjectModal(p.id);
+      };
+      inp.addEventListener('change', handleUpdate);
+      inp.addEventListener('blur', handleUpdate);
+    });
+    div.appendChild(info);
+    div.addEventListener('click', () => openProjectModal(p.id));
+    el.appendChild(div);
+  });
+  updatePortfolioChart();
+}
+
+let portfolioChart = null;
+function updatePortfolioChart(){
+  const totals = projects.map(p => computeProject(p).VGV);
+  const ctx = document.getElementById('chartPortfolio')?.getContext('2d');
+  if(!ctx) return;
+  if (portfolioChart) {
+    portfolioChart.data.labels = projects.map(p => p.name);
+    portfolioChart.data.datasets[0].data = totals;
+    portfolioChart.update();
+  } else {
+    portfolioChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels: projects.map(p => p.name), datasets: [{ data: totals, backgroundColor: colors }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#fff' } } } }
+    });
+  }
+  document.getElementById('totalVgv').innerText = totals.reduce((s,v)=>s+v,0).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+  // média de ROI e TIR (ignora NaN)
+  const rois = projects.map(p=>computeProject(p).roi).filter(isFinite);
+  const irrs = projects.map(p=>computeProject(p).irrAnnual).filter(isFinite);
+  const avgRoi = rois.length ? rois.reduce((s,v)=>s+v,0)/rois.length : NaN;
+  const avgIrr = irrs.length ? irrs.reduce((s,v)=>s+v,0)/irrs.length : NaN;
+  document.getElementById('avgRoi').innerText = isFinite(avgRoi) ? avgRoi.toFixed(1)+'%' : '--';
+  document.getElementById('avgIrr').innerText = isFinite(avgIrr) ? (avgIrr*100).toFixed(1)+'%' : '--';
+}
+
+// ---------- Modal e charts de detalhe (mantidos) ----------
+let modalCharts = { fluxo: null, receitas: null, custos: null };
+function destroyModalCharts(){
+  Object.keys(modalCharts).forEach(k=>{ if (modalCharts[k]) { try{ modalCharts[k].destroy(); } catch(e){} modalCharts[k]=null; } });
+}
+
+function openProjectModal(id){
+  const p = projects.find(x => x.id === id);
+  if (!p) return;
+  const d = computeProject(p);
+
+  document.getElementById('modalTitle').innerText = p.name;
+  document.getElementById('modalCity').innerText = p.city;
+  document.getElementById('modalVgv').innerText = d.VGV.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
+
+  document.getElementById('modalStats').innerHTML = `
+    <div class="stat"><div class="small">ROI</div><div style="font-weight:800;color:var(--gold)">${isFinite(d.roi)?d.roi.toFixed(1)+'%':'--'}</div></div>
+    <div class="stat"><div class="small">TIR (a.a.)</div><div style="font-weight:800;color:var(--gold)">${isFinite(d.irrAnnual)?(d.irrAnnual*100).toFixed(1)+'%':'--'}</div></div>
+    <div class="stat"><div class="small">VPL (12% a.a.)</div><div style="font-weight:800;color:var(--gold)">${d.npvVal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Payback</div><div style="font-weight:800;color:var(--gold)">${d.payback} meses</div></div>
+    <div class="stat"><div class="small">Custo construção</div><div style="font-weight:800;color:var(--gold)">${d.totalConstruction.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Marketing</div><div style="font-weight:800;color:var(--gold)">${d.marketingTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Comissão</div><div style="font-weight:800;color:var(--gold)">${d.brokerTotal.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Unidades</div><div style="font-weight:800;color:var(--gold)">${p.units}</div></div>
+    <div class="stat"><div class="small">Área total</div><div style="font-weight:800;color:var(--gold)">${(p.units * p.area).toLocaleString('pt-BR')} m²</div></div>
+    <div class="stat"><div class="small">Receita média/unidade</div><div style="font-weight:800;color:var(--gold)">${(d.VGV / p.units).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+    <div class="stat"><div class="small">Lucro estimado</div><div style="font-weight:800;color:var(--gold)">${(d.VGV - d.totalConstruction - d.marketingTotal - d.brokerTotal).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})}</div></div>
+  `;
+
+  document.getElementById('detailModal').style.display = 'flex';
+  destroyModalCharts();
+
+  function createModalChart(ctx, datasets){
+    return new Chart(ctx, {
+      type: 'line',
+      data: { labels: Array.from({length: d.net.length}, (_, i) => 'M' + (i+1)), datasets: datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode:'nearest', axis:'x', intersect:false },
+        scales: { x: { ticks: { color:'#fff' } }, y: { ticks: { color:'#fff' } } },
+        plugins: {
+          legend: { labels: { color:'#fff' } },
+          tooltip: {
+            callbacks: {
+              label: function(context){
+                const v = context.raw || 0;
+                const total = context.dataset.data.slice(0, context.dataIndex+1).reduce((s,x)=>s+x,0);
+                return context.dataset.label + ': ' + v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}) + ' (Total: ' + total.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0}) + ')';
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  modalCharts.fluxo = createModalChart(document.getElementById('chartFluxo').getContext('2d'), [
+    { label: 'Fluxo Líquido', data: d.net, borderColor: '#c9a84b', backgroundColor: 'rgba(201,168,75,0.08)', fill: true, tension: 0.3 }
+  ]);
+  modalCharts.receitas = createModalChart(document.getElementById('chartReceitas').getContext('2d'), [
+    { label: 'Pré-lançamento', data: d.receiptsPre, borderColor: '#ff9800', backgroundColor: 'rgba(255,152,0,0.12)', fill: true, tension: 0.3 },
+    { label: 'Lançamento', data: d.receiptsLaunch, borderColor: '#4caf50', backgroundColor: 'rgba(76,175,80,0.08)', fill: true, tension: 0.3 },
+    { label: 'Mensais', data: d.receiptsMonthly, borderColor: '#2196f3', backgroundColor: 'rgba(33,150,243,0.06)', fill: true, tension: 0.3 }
+  ]);
+  const combinedCosts = d.investments.map((v,i)=>(v||0)+(d.costs[i]||0));
+  modalCharts.custos = createModalChart(document.getElementById('chartCustos').getContext('2d'), [
+    { label: 'Investimentos', data: d.investments, borderColor: '#9c27b0', backgroundColor: 'rgba(156,39,176,0.06)', fill: true, tension: 0.3 },
+    { label: 'Custos operacionais', data: d.costs, borderColor: '#f44336', backgroundColor: 'rgba(244,67,54,0.06)', fill: true, tension: 0.3 },
+    { label: 'Total Custos', data: combinedCosts, borderColor: '#ff5722', backgroundColor: 'rgba(255,87,34,0.06)', fill: true, tension: 0.3 }
+  ]);
+  setActiveTab('fluxo');
+}
+
+// ---------- Eventos e persistência (mantém comportamento) ----------
+document.getElementById('closeModal')?.addEventListener('click', ()=>{ document.getElementById('detailModal').style.display = 'none'; destroyModalCharts(); });
+
+document.querySelectorAll('#modalTabs .tab-btn').forEach(btn=>{ btn.addEventListener('click', () => setActiveTab(btn.dataset.tab)); });
+function setActiveTab(tab){
+  document.querySelectorAll('#modalTabs .tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab===tab));
+  document.getElementById('wrapFluxo').style.display = (tab==='fluxo') ? 'block' : 'none';
+  document.getElementById('wrapReceitas').style.display = (tab==='receitas') ? 'block' : 'none';
+  document.getElementById('wrapCustos').style.display = (tab==='custos') ? 'block' : 'none';
+  Object.keys(modalCharts).forEach(k=>{ if(modalCharts[k]) try{ modalCharts[k].resize(); modalCharts[k].update(); } catch(e){} });
+}
+
+function saveAll(){ localStorage.setItem('aps_projects', JSON.stringify(projects)); saveCfg(); alert('Alterações salvas no navegador (localStorage).'); }
+function exportJson(){ const blob = new Blob([JSON.stringify(projects, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'aps_projects.json'; a.click(); URL.revokeObjectURL(url); }
+function downloadCsv(){ const rows = ['id,name,city,units,area,price_m2,cost_m2,months,pre_launch_sales,launch_sales,monthly_sales']; projects.forEach(p => rows.push([p.id,p.name,p.city,p.units,p.area,p.price_m2,p.cost_m2,p.months,p.pre_launch_sales,p.launch_sales,p.monthly_sales].join(','))); const blob = new Blob([rows.join('\n')], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'aps_projects.csv'; a.click(); URL.revokeObjectURL(url); }
+
+document.getElementById('btnLogin')?.addEventListener('click', () => {
+  const input = document.getElementById('pwd');
+  const box = document.getElementById('loginBox');
+  if (input.value === PASSWORD) {
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    const saved = localStorage.getItem('aps_projects');
+    if (saved) try { projects = JSON.parse(saved); } catch(e){}
+    loadCfg();
+    renderSidebar();
+  } else {
+    if(box){ box.style.transform = 'translateX(-10px)'; box.style.borderColor = '#f44336'; box.style.boxShadow = '0 0 15px rgba(244,67,54,0.6)'; setTimeout(() => { box.style.transform = 'translateX(10px)'; }, 100); setTimeout(() => { box.style.transform = 'translateX(-10px)'; }, 200); setTimeout(() => { box.style.transform = 'translateX(0)'; box.style.borderColor = 'rgba(255,255,255,0.05)'; box.style.boxShadow='0 0 15px rgba(201,168,75,0.4)'; }, 300); }
+    input.value = '';
+    input.focus();
+  }
 });
 
+document.getElementById('pwd')?.addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('btnLogin').click(); });
+
+document.getElementById('btnExport')?.addEventListener('click', exportJson);
+document.getElementById('btnPublish')?.addEventListener('click', saveAll);
+document.getElementById('btnReset')?.addEventListener('click', ()=>{ if(confirm('Restaurar valores iniciais?')){ localStorage.removeItem('aps_projects'); localStorage.removeItem(cfgKey); location.reload(); } });
+
+document.getElementById('btnNew')?.addEventListener('click', ()=>{ const id = projects.length + 1; projects.push({ id:id, name:'Novo Empreendimento '+id, city:'Cidade', units:10, area:70, price_m2:5000, cost_m2:2000, months:18, pre_launch_sales:0, launch_sales:0, monthly_sales:2 }); renderSidebar(); });
+document.getElementById('btnDownloadCsv')?.addEventListener('click', downloadCsv);
+
+// salvar cfg ao alterar inputs (mantém ids originais)
+['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths','preLaunchMonths','launchMonths','incc','ipca','payAtoPct','payInterPct','payInterMonth','payChavesPct'].forEach(id=>{
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('change', saveCfg);
+});
+
+window.addEventListener('load', ()=>{
+  const saved = localStorage.getItem('aps_projects');
+  if(saved) try { projects = JSON.parse(saved); } catch(e){}
+  loadCfg();
+});
+  
 </script>
 
 </body>
