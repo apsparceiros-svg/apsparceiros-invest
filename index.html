@@ -579,11 +579,18 @@ function computeProject(p){
   const rate = Math.pow(1+0.12,1/12)-1;
   const npvVal = net.reduce((s,v,i)=>s+v/Math.pow(1+rate,i),0);
 
-  let cumul=0, payback='--';
-  for(let i=0;i<net.length;i++){
-    cumul+=net[i];
-    if(cumul>=0){payback=i+1; break;}
+  let cumul = 0;
+let payback = '--';
+for(let i=0; i<net.length; i++){
+  cumul += net[i];
+  if(cumul >= 0){
+    const prevCumul = cumul - net[i]; // acumulado até o mês anterior
+    const frac = net[i] === 0 ? 0 : (0 - prevCumul) / net[i]; // fração do mês atual necessária
+    payback = i + frac + 1; // mês real de payback
+    payback = Math.round(payback * 10) / 10; // arredonda para 1 casa decimal
+    break;
   }
+}
   const totalNet = net.reduce((s,v)=>s+v,0);
   const totalInvestment = investments.reduce((s,v)=>s+v,0);
   const roi = totalInvestment===0?0:(totalNet/totalInvestment)*100;
