@@ -511,159 +511,112 @@ function computeProject(p) {
   const VGV = p.units * price_unit_full;
   const totalConstruction = p.units * p.area * p.cost_m2;
 
-  // receipts por modalidade
-  const receiptsPre = [], receiptsLaunch = [], receiptsMonthly = [];
-  const investments = [], costs = [];
+  // Arrays de recebimentos unitários
+  const receipts = [];
+  const investments = [];
+  const costs = [];
 
-  // taxas e percentuais (em fração)
-  const pagAtoPct = (cfg.payAtoPct || 0) / 100;
-  const pagInterPct = (cfg.payInterPct || 0) / 100;
-  const pagChavesPct = (cfg.payChavesPct || 0) / 100;
-  const entradaPctCfg = (cfg.entradaPct || 0) / 100;
+  // Percentuais convertidos para fração
+  const pctAto = (cfg.payAtoPct || 0) / 100;
+  const pctInter = (cfg.payInterPct || 0) / 100;
+  const pctChaves = (cfg.payChavesPct || 0) / 100;
+  const pctEntrada = (cfg.entradaPct || 0) / 100;
   const entradaMonths = Math.max(1, Math.floor(cfg.entradaMonths || 1));
   const restParc = Math.max(1, Math.floor(cfg.parcelasRestantes || 24));
   const incc = Number(cfg.incc || 0.0045);
   const ipca = Number(cfg.ipca || 0.005);
 
-  // helper: projeção da correção
-  function projCorrMes(mes, saleMonth){
+  // Aplica projeção
+  function projCorrMes(mes, saleMonth) {
     if (!cfg.applyProjection) return 1;
     if (mes < p.months) {
-      return Math.pow(1+incc, mes - saleMonth);
+      return Math.pow(1 + incc, mes - saleMonth);
     } else {
-      return Math.pow(1+incc, Math.max(0, p.months - saleMonth)) * Math.pow(1+ipca, Math.max(0, mes - p.months));
+      return Math.pow(1 + incc, Math.max(0, p.months - saleMonth)) * Math.pow(1 + ipca, Math.max(0, mes - p.months));
     }
   }
 
-  // adiciona pagamentos por unidade vendida
-  function addPagamentoNoAto(saleMonth, price_unit, targetArr){
-    const valor = price_unit * pagAtoPct;
-    if (valor > 0) addToArrayAt(targetArr, saleMonth, valor);
-  }
-  function addPagamentoIntermediario(saleMonth, price_unit, targetArr){
-    const valor = price_unit * pagInterPct;
-    if (valor > 0) {
-      const interMonth = saleMonth + (cfg.payInterMonth || 0);
-      addToArrayAt(targetArr, interMonth, valor);
-    }
-  }
-  function addPagamentoChaves(price_unit, targetArr){
-    const valor = price_unit * pagChavesPct;
-    if (valor > 0) {
-      const chavesMonth = p.months; // pagamento na entrega das chaves no mês final da obra
-      addToArrayAt(targetArr, chavesMonth, valor);
-    }
-  }
-  function addEntradaParcelada(saleMonth, price_unit, targetArr){
-    const entradaPct = entradaPctCfg;
-    const entradaTotal = price_unit * entradaPct;
-    if (entradaTotal > 0) {
-      const parcela = entradaTotal / entradaMonths;
-      for (let m = 0; m < entradaMonths; m++){
-        addToArrayAt(targetArr, saleMonth + m, parcela);
-      }
-    }
-  }
-  function addSaldoParcelado(saleMonth, price_unit, targetArr){
-    // restante após pagamentos fixos e entrada
-    const entradaPct = entradaPctCfg;
-    let restantePct = 1 - (pagAtoPct + pagInterPct + pagChavesPct + entradaPct);
-    if (restantePct < 0) restantePct = 0;
-    const restanteTotal = price_unit * restantePct;
-    if (restanteTotal > 0) {
-      for (let m = 0; m < restParc; m++){
-        addToArrayAt(targetArr, saleMonth + entradaMonths + m, restanteTotal / restParc);
-      }
-    }
+  // Adiciona valores ao array por mês
+  function addToMonth(arr, month, value) {
+    while (arr.length <= month) arr.push(0);
+    arr[month] += value;
   }
 
-  // distribui unidades vendidas em um período
-  function distributeUnits(units, startMonth, receiptsArr, periodMonths){
+  // Distribui unidades vendidas
+  function distributeUnits(units, startMonth, periodMonths, discount = 0) {
     if (units <= 0) return;
     periodMonths = Math.max(1, Math.floor(periodMonths || 1));
-    for (let u = 0; u < units; u++){
-      const monthOffsetWithinPeriod = Math.floor(u * periodMonths / units);
-      const saleMonth = startMonth + monthOffsetWithinPeriod;
-      let price_unit = price_unit_full;
-      if (periodMonths === cfg.preLaunchMonths && cfg.discountPre) price_unit *= (1 - cfg.discountPre / 100);
-      if (periodMonths === cfg.launchMonths && cfg.discountLaunch) price_unit *= (1 - cfg.discountLaunch / 100);
-      // aplicar pagamentos
-      addPagamentoNoAto(saleMonth, price_unit, receiptsArr);
-      addPagamentoIntermediario(saleMonth, price_unit, receiptsArr);
-      addPagamentoChaves(price_unit, receiptsArr);
-      addEntradaParcelada(saleMonth, price_unit, receiptsArr);
-      addSaldoParcelado(saleMonth, price_unit, receiptsArr);
-      // se usar projeção, aplicamos depois ao compor receipts
+    for (let u = 0; u < units; u++) {
+      const monthOffset = Math.floor(u * periodMonths / units);
+      const saleMonth = startMonth + monthOffset;
+      let price_unit = price_unit_full * (1 - discount / 100);
+
+      // Pagamentos unitários
+      addToMonth(receipts, saleMonth, price_unit * pctAto); // Pagamento no ato
+      if (pctInter > 0) addToMonth(receipts, saleMonth + cfg.payInterMonth, price_unit * pctInter); // Pagamento intermediário
+      if (pctChaves > 0) addToMonth(receipts, p.months, price_unit * pctChaves); // Pagamento na entrega
+      if (pctEntrada > 0) {
+        const parcela = (price_unit * pctEntrada) / entradaMonths;
+        for (let m = 0; m < entradaMonths; m++) addToMonth(receipts, saleMonth + m, parcela); // Entrada parcelada
+      }
+      // Saldo restante
+      let restantePct = 1 - (pctAto + pctInter + pctChaves + pctEntrada);
+      if (restantePct < 0) restantePct = 0;
+      const restanteTotal = price_unit * restantePct;
+      const saldoParc = restanteTotal / restParc;
+      for (let m = 0; m < restParc; m++) addToMonth(receipts, saleMonth + entradaMonths + m, saldoParc);
     }
   }
 
-  // distribuir vendas
-  distributeUnits(p.pre_launch_sales || 0, 0, receiptsPre, cfg.preLaunchMonths);
-  distributeUnits(p.launch_sales || 0, cfg.preLaunchMonths || 0, receiptsLaunch, cfg.launchMonths);
+  // Distribuição das vendas
+  distributeUnits(p.pre_launch_sales || 0, 0, cfg.preLaunchMonths, cfg.discountPre);
+  distributeUnits(p.launch_sales || 0, cfg.preLaunchMonths || 0, cfg.launchMonths, cfg.discountLaunch);
 
   let unitsAssigned = (p.pre_launch_sales || 0) + (p.launch_sales || 0);
   let monthIdx = (cfg.preLaunchMonths || 0) + (cfg.launchMonths || 0);
-  while (unitsAssigned < p.units){
+  while (unitsAssigned < p.units) {
     const unitsRemaining = p.units - unitsAssigned;
     const unitsThisMonth = Math.min(p.monthly_sales || 1, unitsRemaining);
-    distributeUnits(unitsThisMonth, monthIdx, receiptsMonthly, 1);
+    distributeUnits(unitsThisMonth, monthIdx, 1, 0);
     unitsAssigned += unitsThisMonth;
     monthIdx++;
     if (monthIdx > 5000) break;
   }
 
-  // comprimento final do horizonte
-  const maxReceiptsLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length);
-  const finalLen = Math.max(maxReceiptsLen, months + 1, p.months + 1);
+  const finalLen = Math.max(receipts.length, months + 1, p.months + 1);
 
-  // investimentos ao longo dos meses (simplificado conforme sua lógica)
+  // Investimentos mensais (simplificado)
   const den = (months * (months + 1)) / 2;
-  for (let m = 1; m <= finalLen; m++){
-    if (m <= months){
-      const prop = m / den;
-      const base = totalConstruction * prop;
-      investments[m-1] = base * Math.pow(1 + incc, m);
-    } else {
-      investments[m-1] = 0;
-    }
+  for (let m = 1; m <= finalLen; m++) {
+    investments[m - 1] = m <= months ? (totalConstruction * (m / den)) * Math.pow(1 + incc, m) : 0;
   }
 
-  // custos operacionais
-  for (let m = 0; m < finalLen; m++){
-    if (m < months){
+  // Custos operacionais
+  for (let m = 0; m < finalLen; m++) {
+    if (m < months) {
       let c = 0;
       const marketingTotal = 0.015 * VGV;
-      const marketingMonthly = marketingTotal / months;
-      c += marketingMonthly + 8000 + 3000;
+      c += marketingTotal / months + 8000 + 3000;
       if (m === 11) c += 0.01 * VGV;
       if (m === 0) c += 0.05 * totalConstruction;
       costs[m] = c;
     } else costs[m] = 0;
   }
 
-  // compor receipts somando modalidades e aplicando projeção
-  const receipts = [];
-  for (let i = 0; i < finalLen; i++){
-    const a = i < receiptsPre.length ? receiptsPre[i] : 0;
-    const b = i < receiptsLaunch.length ? receiptsLaunch[i] : 0;
-    const c = i < receiptsMonthly.length ? receiptsMonthly[i] : 0;
-    let val = a + b + c;
-    if (cfg.applyProjection) val = val * projCorrMes(i, 0); // usa projCorrMes se quiser projetar
-    receipts[i] = val;
-  }
+  // Aplica projeção se configurado
+  const receiptsProjected = receipts.map((r, i) => r * projCorrMes(i, 0));
 
-  // fluxo líquido
-  const net = receipts.map((r, i) => r - (investments[i] || 0) - (costs[i] || 0));
+  // Fluxo líquido
+  const net = receiptsProjected.map((r, i) => r - (investments[i] || 0) - (costs[i] || 0));
 
-  // métricas
+  // Métricas
   const irrMonthly = irr(net);
   const irrAnnual = isFinite(irrMonthly) ? Math.pow(1 + irrMonthly, 12) - 1 : NaN;
   const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
   const npvVal = net.reduce((s, v, i) => s + v / Math.pow(1 + rate, i), 0);
 
-  // payback cumulativo
   let cumul = 0, payback = '--';
-  for (let i = 0; i < net.length; i++){
+  for (let i = 0; i < net.length; i++) {
     cumul += net[i];
     if (cumul >= 0) { payback = i + 1; break; }
   }
@@ -671,14 +624,15 @@ function computeProject(p) {
   const totalNet = net.reduce((s, v) => s + v, 0);
   const totalInvestment = investments.reduce((s, v) => s + v, 0);
   const roi = totalInvestment === 0 ? 0 : (totalNet / totalInvestment) * 100;
+
   const marketingTotal = 0.015 * VGV;
   const brokerTotal = 0.05 * VGV;
 
   return {
-    receiptsPre,
-    receiptsLaunch,
-    receiptsMonthly,
-    receipts,
+    receiptsPre: receiptsProjected.slice(0, cfg.preLaunchMonths),
+    receiptsLaunch: receiptsProjected.slice(cfg.preLaunchMonths, cfg.preLaunchMonths + cfg.launchMonths),
+    receiptsMonthly: receiptsProjected.slice(cfg.preLaunchMonths + cfg.launchMonths),
+    receipts: receiptsProjected,
     investments,
     costs,
     net,
