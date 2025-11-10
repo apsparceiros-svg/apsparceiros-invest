@@ -581,16 +581,16 @@ function computeProject(p){
 
   let cumul = 0;
 let payback = '--';
-for(let i=0; i<net.length; i++){
-  cumul += net[i];
-  if(cumul >= 0){
-    const prevCumul = cumul - net[i]; // acumulado até o mês anterior
-    const frac = net[i] === 0 ? 0 : (0 - prevCumul) / net[i]; // fração do mês atual necessária
-    payback = i + frac + 1; // mês real de payback
-    payback = Math.round(payback * 10) / 10; // arredonda para 1 casa decimal
-    break;
-  }
+for(let m = 0; m < maxLen; m++){
+    const receipts = (receiptsPre[m]||0) + (receiptsLaunch[m]||0) + (receiptsMonthly[m]||0);
+    const costsPaid = (investments[m]||0) + (costs[m]||0);
+    cumul += (receipts - costsPaid);
+    if(cumul >= 0){
+        payback = m + 1; // mês exato em que o fluxo líquido acumulado fica >= 0
+        break;
+    }
 }
+
   const totalNet = net.reduce((s,v)=>s+v,0);
   const totalInvestment = investments.reduce((s,v)=>s+v,0);
   const roi = totalInvestment===0?0:(totalNet/totalInvestment)*100;
