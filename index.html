@@ -569,98 +569,109 @@ function computeProject(p) {
   }
 
   // Função aprimorada de distribuição de pagamentos por unidade
-function distributeUnit(saleMonth, price_unit, targetArray, p) {
-  const entradaMonths = p.entradaMonths || 0;
-  const restParc = p.restParc || 0;
+function calculateCashFlow(p, cfg) {
+  const receiptsPre = [];
+  const receiptsLaunch = [];
+  const receiptsMonthly = [];
 
-  let pctAto = p.pctAto || 0;
-  let pctInter = p.pctInter || 0;
-  let pctChaves = p.pctChaves || 0;
-  let pctEntrada = p.pctEntrada || 0;
+  // Função de distribuição por unidade
+  function distributeUnit(saleMonth, price_unit, targetArray, p) {
+    const entradaMonths = p.entradaMonths || 0;
+    const restParc = p.restParc || 0;
 
-  let totalPct = pctAto + pctInter + pctChaves + pctEntrada;
+    let pctAto = p.pctAto || 0;
+    let pctInter = p.pctInter || 0;
+    let pctChaves = p.pctChaves || 0;
+    let pctEntrada = p.pctEntrada || 0;
 
-  if (totalPct > 1) {
-    const factor = 1 / totalPct;
-    pctAto *= factor;
-    pctInter *= factor;
-    pctChaves *= factor;
-    pctEntrada *= factor;
-    totalPct = 1;
-    console.warn(`Percentuais ajustados proporcionalmente para não ultrapassar 100%.`);
-  }
+    let totalPct = pctAto + pctInter + pctChaves + pctEntrada;
 
-  const addReceipt = (array, month, value) => {
-    if (value > 0) array[month] = (array[month] || 0) + value;
-  };
+    if (totalPct > 1) {
+      const factor = 1 / totalPct;
+      pctAto *= factor;
+      pctInter *= factor;
+      pctChaves *= factor;
+      pctEntrada *= factor;
+      totalPct = 1;
+      console.warn(`Percentuais ajustados proporcionalmente para não ultrapassar 100%.`);
+    }
 
-  // Pagamentos
-  addReceipt(targetArray, saleMonth, price_unit * pctAto);
-  addReceipt(targetArray, saleMonth + (cfg.payInterMonth || 0), price_unit * pctInter);
-  addReceipt(targetArray, saleMonth, price_unit * pctChaves);
+    const addReceipt = (array, month, value) => {
+      if (value > 0) {
+        while (array.length <= month) array.push(0);
+        array[month] += value;
+      }
+    };
 
-  if (pctEntrada > 0 && entradaMonths > 0) {
-    const parcela = (price_unit * pctEntrada) / entradaMonths;
-    for (let m = 0; m < entradaMonths; m++) {
-      addReceipt(targetArray, saleMonth + m, parcela);
+    // Pagamentos
+    addReceipt(targetArray, saleMonth, price_unit * pctAto);
+    addReceipt(targetArray, saleMonth + (cfg.payInterMonth || 0), price_unit * pctInter);
+    addReceipt(targetArray, saleMonth, price_unit * pctChaves);
+
+    if (pctEntrada > 0 && entradaMonths > 0) {
+      const parcela = (price_unit * pctEntrada) / entradaMonths;
+      for (let m = 0; m < entradaMonths; m++) {
+        addReceipt(targetArray, saleMonth + m, parcela);
+      }
+    }
+
+    let restantePct = Math.max(0, 1 - totalPct);
+    const saldoTotal = price_unit * restantePct;
+    if (restParc > 0 && saldoTotal > 0) {
+      const saldoParc = saldoTotal / restParc;
+      for (let m = 0; m < restParc; m++) {
+        addReceipt(targetArray, saleMonth + entradaMonths + m, saldoParc);
+      }
     }
   }
 
-  let restantePct = Math.max(0, 1 - totalPct);
-  const saldoTotal = price_unit * restantePct;
-  if (restParc > 0 && saldoTotal > 0) {
-    const saldoParc = saldoTotal / restParc;
-    for (let m = 0; m < restParc; m++) {
-      addReceipt(targetArray, saleMonth + entradaMonths + m, saldoParc);
+  // Distribuição de unidades
+  function distributeUnits(units, startMonth, periodMonths, discount = 0, targetArray, p) {
+    if (units <= 0) return;
+    periodMonths = Math.max(1, Math.floor(periodMonths || 1));
+    for (let u = 0; u < units; u++) {
+      const monthOffset = Math.floor(u * periodMonths / units);
+      const saleMonth = startMonth + monthOffset;
+      const price_unit = price_unit_full * (1 - discount / 100);
+      distributeUnit(saleMonth, price_unit, targetArray, p);
     }
   }
-}
 
-// Função de distribuição por unidades (preserva seu código original)
-function distributeUnits(units, startMonth, periodMonths, discount = 0, targetArray, p) {
-  if (units <= 0) return;
-  periodMonths = Math.max(1, Math.floor(periodMonths || 1));
-  for (let u = 0; u < units; u++) {
-    const monthOffset = Math.floor(u * periodMonths / units);
-    const saleMonth = startMonth + monthOffset;
-    const price_unit = price_unit_full * (1 - discount / 100);
-    distributeUnit(saleMonth, price_unit, targetArray, p);
+  // Distribuição inicial
+  distributeUnits(p.pre_launch_sales || 0, 0, cfg.preLaunchMonths || 1, cfg.discountPre || 0, receiptsPre, p);
+  distributeUnits(p.launch_sales || 0, cfg.preLaunchMonths || 0, cfg.launchMonths || 1, cfg.discountLaunch || 0, receiptsLaunch, p);
+
+  // Distribuição mensal restante
+  let unitsAssigned = (p.pre_launch_sales || 0) + (p.launch_sales || 0);
+  let monthIdx = (cfg.preLaunchMonths || 0) + (cfg.launchMonths || 0);
+
+  while (unitsAssigned < p.units) {
+    const unitsRemaining = p.units - unitsAssigned;
+    const unitsThisMonth = Math.min(p.monthly_sales || 1, unitsRemaining);
+    distributeUnits(unitsThisMonth, monthIdx, 1, 0, receiptsMonthly, p);
+    unitsAssigned += unitsThisMonth;
+    monthIdx++;
+    if (monthIdx > 5000) break;
   }
-}
 
-// Distribuição das vendas
-distributeUnits(p.pre_launch_sales || 0, 0, cfg.preLaunchMonths || 1, cfg.discountPre || 0, receiptsPre, p);
-distributeUnits(p.launch_sales || 0, cfg.preLaunchMonths || 0, cfg.launchMonths || 1, cfg.discountLaunch || 0, receiptsLaunch, p);
+  // Normaliza arrays
+  const maxLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length);
+  while (receiptsPre.length < maxLen) receiptsPre.push(0);
+  while (receiptsLaunch.length < maxLen) receiptsLaunch.push(0);
+  while (receiptsMonthly.length < maxLen) receiptsMonthly.push(0);
 
-let unitsAssigned = (p.pre_launch_sales || 0) + (p.launch_sales || 0);
-let monthIdx = (cfg.preLaunchMonths || 0) + (cfg.launchMonths || 0);
-
-while (unitsAssigned < p.units) {
-  const unitsRemaining = p.units - unitsAssigned;
-  const unitsThisMonth = Math.min(p.monthly_sales || 1, unitsRemaining);
-  distributeUnits(unitsThisMonth, monthIdx, 1, 0, receiptsMonthly, p);
-  unitsAssigned += unitsThisMonth;
-  monthIdx++;
-  if (monthIdx > 5000) break;
-}
-
-// Normaliza arrays
-const maxLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length);
-while (receiptsPre.length < maxLen) receiptsPre.push(0);
-while (receiptsLaunch.length < maxLen) receiptsLaunch.push(0);
-while (receiptsMonthly.length < maxLen) receiptsMonthly.push(0);
-
-// Fluxo líquido e métricas financeiras seguem igual ao seu código original
+  // Fluxo líquido, investimentos e custos
   const net = [];
   const investments = [];
   const costs = [];
   const den = (p.months * (p.months + 1)) / 2;
 
   for (let m = 0; m < maxLen; m++) {
-    // Receita total do mês
     const totalReceita = (receiptsPre[m] || 0) + (receiptsLaunch[m] || 0) + (receiptsMonthly[m] || 0);
+
     // Investimentos mensais
     investments[m] = m < p.months ? (totalConstruction * ((m + 1) / den)) * Math.pow(1 + incc, m + 1) : 0;
+
     // Custos operacionais
     if (m < p.months) {
       let c = 0;
@@ -670,6 +681,7 @@ while (receiptsMonthly.length < maxLen) receiptsMonthly.push(0);
       if (m === 0) c += 0.05 * totalConstruction;
       costs[m] = c;
     } else costs[m] = 0;
+
     // Fluxo líquido
     net[m] = totalReceita - (investments[m] || 0) - (costs[m] || 0);
   }
