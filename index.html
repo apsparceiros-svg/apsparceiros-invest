@@ -918,16 +918,19 @@ document.getElementById('btnDownloadCsv').addEventListener('click', downloadCsv)
   if (el) el.addEventListener('change', saveCfg);
 });
 
-window.addEventListener('load', ()=>{
+window.addEventListener('load', () => {
   const saved = localStorage.getItem('aps_projects');
-  if (saved) try { projects = JSON.parse(saved); } catch(e){}
+  if (saved) {
+    try {
+      projects = JSON.parse(saved);
+    } catch(e) {}
+  }
   loadCfg();
+  // Opcional: renderSidebar() se quiser carregar já logado
+  if (!document.getElementById('loginModal').style.display) {
+    renderSidebar();
+  }
 });
-
-// ativar render inicial caso já logado (facilidade para testes)
-if (!document.getElementById('loginModal').style.display) {
-  // nada adicional aqui; a ação ocorre ao logar
-}
 </script>
 
 </body>
