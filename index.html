@@ -508,97 +508,156 @@ function computeProject(p){
   const incc = Number(cfg.incc||0.0045);
   const ipca = Number(cfg.ipca||0.005);
 
-  const receiptsPre=[], receiptsLaunch=[], receiptsMonthly=[];
+  // Receipts por tipo
+  const receiptsPre = [], receiptsLaunch = [], receiptsMonthly = [];
 
   function addReceipt(arr, month, value){
-    while(arr.length<=month) arr.push(0);
-    arr[month]+=value;
+    if (value === 0) return;
+    const m = Math.max(0, Math.floor(month));
+    while(arr.length<=m) arr.push(0);
+    arr[m] += value;
   }
 
+  // função que distribui o pagamento de 1 unidade (parcelas) para um array
   function distributeUnit(saleMonth, price_unit, targetArray){
-    if(pctAto>0) addReceipt(targetArray, saleMonth, price_unit*pctAto);
-    if(pctInter>0) addReceipt(targetArray, saleMonth+(cfg.payInterMonth||0), price_unit*pctInter);
-    if(pctChaves>0) addReceipt(targetArray, p.months, price_unit*pctChaves);
-    if(pctEntrada>0){
-      const parcela = (price_unit*pctEntrada)/entradaMonths;
-      for(let m=0;m<entradaMonths;m++) addReceipt(targetArray, saleMonth+m, parcela);
+    // pagamento no ato
+    if (pctAto > 0) addReceipt(targetArray, saleMonth, price_unit * pctAto);
+    // pagamento intermediário (na month + cfg.payInterMonth)
+    if (pctInter > 0) addReceipt(targetArray, saleMonth + (cfg.payInterMonth||0), price_unit * pctInter);
+    // pagamento de chaves (na entrega)
+    if (pctChaves > 0) addReceipt(targetArray, p.months, price_unit * pctChaves);
+    // entrada parcelada a partir do mês da venda
+    if (pctEntrada > 0 && entradaMonths > 0) {
+      const parcela = (price_unit * pctEntrada) / entradaMonths;
+      for (let m = 0; m < entradaMonths; m++) addReceipt(targetArray, saleMonth + m, parcela);
     }
-    let restantePct = Math.max(0, 1-(pctAto+pctInter+pctChaves+pctEntrada));
-    const saldoTotal = price_unit*restantePct;
-    const saldoParc = saldoTotal/restParc;
-    for(let m=0;m<restParc;m++) addReceipt(targetArray, saleMonth+entradaMonths+m, saldoParc);
+    // saldo restante parcelado
+    let restantePct = 1 - (pctAto + pctInter + pctChaves + pctEntrada);
+    restantePct = Math.max(0, restantePct);
+    const saldoTotal = price_unit * restantePct;
+    if (restParc > 0 && saldoTotal > 0) {
+      const saldoParc = saldoTotal / restParc;
+      for (let m = 0; m < restParc; m++) addReceipt(targetArray, saleMonth + entradaMonths + m, saldoParc);
+    }
   }
 
   function distributeUnits(units, startMonth, periodMonths, discount=0, targetArray){
-    periodMonths=Math.max(1, Math.floor(periodMonths||1));
-    for(let u=0;u<units;u++){
-      const monthOffset = Math.floor(u*periodMonths/units);
-      const saleMonth = startMonth+monthOffset;
-      const price_unit = price_unit_full*(1-discount/100);
+    units = Math.max(0, Math.floor(units || 0));
+    periodMonths = Math.max(1, Math.floor(periodMonths || 1));
+    for (let u = 0; u < units; u++){
+      // distribui vendas uniformemente dentro do período (0..periodMonths-1)
+      const monthOffset = Math.floor(u * periodMonths / Math.max(1, units));
+      const saleMonth = startMonth + monthOffset;
+      const price_unit = price_unit_full * (1 - (discount || 0) / 100);
       distributeUnit(saleMonth, price_unit, targetArray);
     }
   }
 
+  // distribuir vendas conforme parâmetros
   distributeUnits(p.pre_launch_sales||0, 0, cfg.preLaunchMonths||1, cfg.discountPre||0, receiptsPre);
   distributeUnits(p.launch_sales||0, cfg.preLaunchMonths||0, cfg.launchMonths||1, cfg.discountLaunch||0, receiptsLaunch);
 
-  let unitsAssigned = (p.pre_launch_sales||0)+(p.launch_sales||0);
-  let monthIdx = (cfg.preLaunchMonths||0)+(cfg.launchMonths||0);
-  while(unitsAssigned<p.units){
-    const unitsRemaining = p.units-unitsAssigned;
-    const unitsThisMonth = Math.min(p.monthly_sales||1, unitsRemaining);
+  let unitsAssigned = (p.pre_launch_sales||0) + (p.launch_sales||0);
+  let monthIdx = (cfg.preLaunchMonths||0) + (cfg.launchMonths||0);
+  while (unitsAssigned < p.units) {
+    const unitsRemaining = p.units - unitsAssigned;
+    const unitsThisMonth = Math.min(p.monthly_sales || 1, unitsRemaining);
     distributeUnits(unitsThisMonth, monthIdx, 1, 0, receiptsMonthly);
-    unitsAssigned+=unitsThisMonth;
+    unitsAssigned += unitsThisMonth;
     monthIdx++;
-    if(monthIdx>5000) break;
+    if (monthIdx > 5000) break;
   }
 
-  const maxLen=Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length);
-  while(receiptsPre.length<maxLen) receiptsPre.push(0);
-  while(receiptsLaunch.length<maxLen) receiptsLaunch.push(0);
-  while(receiptsMonthly.length<maxLen) receiptsMonthly.push(0);
+  // nivelar tamanhos
+  const maxLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, p.months + restParc + 6);
+  while (receiptsPre.length < maxLen) receiptsPre.push(0);
+  while (receiptsLaunch.length < maxLen) receiptsLaunch.push(0);
+  while (receiptsMonthly.length < maxLen) receiptsMonthly.push(0);
 
-  const net=[], investments=[], costs=[];
-  const den = (p.months*(p.months+1))/2;
-  for(let m=0;m<maxLen;m++){
-    const totalReceita=(receiptsPre[m]||0)+(receiptsLaunch[m]||0)+(receiptsMonthly[m]||0);
-    investments[m]=m<p.months?(totalConstruction*((m+1)/den))*Math.pow(1+incc, m+1):0;
-    let c=0;
-    const marketingTotal = 0.015*VGV;
-    if(m<p.months){
-      c+=marketingTotal/p.months+8000+3000;
-      if(m===11) c+=0.01*VGV;
-      if(m===0) c+=0.05*totalConstruction;
-      costs[m]=c;
-    } else costs[m]=0;
-    net[m]=totalReceita-(investments[m]||0)-(costs[m]||0);
+  // investimentos e custos (cronograma de obra triangular como seu modelo)
+  const investments = [], costs = [], net = [];
+  const den = (p.months * (p.months + 1)) / 2;
+  for (let m = 0; m < maxLen; m++){
+    const totalReceita = (receiptsPre[m] || 0) + (receiptsLaunch[m] || 0) + (receiptsMonthly[m] || 0);
+    investments[m] = m < p.months ? (totalConstruction * ((m + 1) / den)) * Math.pow(1 + incc, m + 1) : 0;
+    let c = 0;
+    const marketingTotal = 0.015 * VGV;
+    if (m < p.months) {
+      c += marketingTotal / p.months + 8000 + 3000;
+      if (m === 11) c += 0.01 * VGV;
+      if (m === 0) c += 0.05 * totalConstruction;
+      costs[m] = c;
+    } else {
+      costs[m] = 0;
+    }
+    net[m] = totalReceita - (investments[m] || 0) - (costs[m] || 0);
   }
 
-  const irrMonthly=irr(net);
-  const irrAnnual = isFinite(irrMonthly)?Math.pow(1+irrMonthly,12)-1:NaN;
-  const rate = Math.pow(1+0.12,1/12)-1;
-  const npvVal = net.reduce((s,v,i)=>s+v/Math.pow(1+rate,i),0);
+  // IRR / NPV (mantidos sobre net)
+  const irrMonthly = irr(net);
+  const irrAnnual = isFinite(irrMonthly) ? Math.pow(1 + irrMonthly, 12) - 1 : NaN;
+  const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
+  const npvVal = net.reduce((s, v, i) => s + v / Math.pow(1 + rate, i), 0);
+
+  // ======= PAYBACK CORRETO =======
+  // acumulamos apenas o caixa efetivo recebido (receipts) e subtraímos o caixa efetivamente pago (investments + costs)
+  const cashIn = []; // receipts total por mês
+  for (let m = 0; m < maxLen; m++){
+    cashIn[m] = (receiptsPre[m] || 0) + (receiptsLaunch[m] || 0) + (receiptsMonthly[m] || 0);
+  }
+  const cashOut = []; // investimentos + custos por mês
+  for (let m = 0; m < maxLen; m++){
+    cashOut[m] = (investments[m] || 0) + (costs[m] || 0);
+  }
 
   let cumul = 0;
-let payback = '--';
-for(let m = 0; m < maxLen; m++){
-    const receipts = (receiptsPre[m]||0) + (receiptsLaunch[m]||0) + (receiptsMonthly[m]||0);
-    const costsPaid = (investments[m]||0) + (costs[m]||0);
-    cumul += (receipts - costsPaid);
-    if(cumul >= 0){
-        payback = m + 1; // mês exato em que o fluxo líquido acumulado fica >= 0
-        break;
+  let payback = '--';
+  for (let m = 0; m < maxLen; m++){
+    const inM = cashIn[m] || 0;
+    const outM = cashOut[m] || 0;
+    const netM = inM - outM;
+    const prevCumul = cumul;
+    cumul += netM;
+
+    if (cumul >= 0){
+      // Se já estava negativo antes deste mês, fazemos interpolação linear dentro do mês:
+      if (prevCumul < 0 && netM > 0){
+        const frac = (0 - prevCumul) / netM; // fração do mês necessária para zerar
+        payback = +(m + frac + 1).toFixed(2); // m é 0-indexed; +1 para mês humano; arredonda 2 decimais
+      } else {
+        // payback no final do mês m (ou já estava >=0)
+        payback = m + 1;
+      }
+      break;
     }
+  }
+
+  // se cumul nunca ficou >=0, payback permanece '--'
+  const totalNet = net.reduce((s, v) => s + v, 0);
+  const totalInvestment = investments.reduce((s, v) => s + v, 0);
+  const roi = totalInvestment === 0 ? 0 : (totalNet / totalInvestment) * 100;
+  const marketingTotal = 0.015 * VGV;
+  const brokerTotal = 0.05 * VGV;
+
+  return {
+    receiptsPre,
+    receiptsLaunch,
+    receiptsMonthly,
+    net,
+    investments,
+    costs,
+    irrMonthly,
+    irrAnnual,
+    npvVal,
+    payback,
+    roi,
+    VGV,
+    totalConstruction,
+    marketingTotal,
+    brokerTotal
+  };
 }
 
-  const totalNet = net.reduce((s,v)=>s+v,0);
-  const totalInvestment = investments.reduce((s,v)=>s+v,0);
-  const roi = totalInvestment===0?0:(totalNet/totalInvestment)*100;
-  const marketingTotal = 0.015*VGV;
-  const brokerTotal = 0.05*VGV;
-
-  return {receiptsPre, receiptsLaunch, receiptsMonthly, net, investments, costs, irrMonthly, irrAnnual, npvVal, payback, roi, VGV, totalConstruction, marketingTotal, brokerTotal};
-}
 // ===== Renderização e Gráficos =====
 function renderSidebar(){
   const el = document.getElementById('projectsList'); el.innerHTML = '';
