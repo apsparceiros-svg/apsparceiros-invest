@@ -494,168 +494,277 @@ function irr(values, guess = 0.01) {
 }
 
 // ===== Função principal de cálculo do projeto =====
-function computeProject(p){
-  const cfg = saleCfg;
-  const price_unit_full = p.area * p.price_m2;
-  const VGV = p.units * price_unit_full;
-  const totalConstruction = p.units * p.area * p.cost_m2;
-  const pctAto = (cfg.payAtoPct||0)/100;
-  const pctInter = (cfg.payInterPct||0)/100;
-  const pctChaves = (cfg.payChavesPct||0)/100;
-  const pctEntrada = (cfg.entradaPct||0)/100;
-  const entradaMonths = Math.max(1, Math.floor(cfg.entradaMonths||1));
-  const restParc = Math.max(1, Math.floor(cfg.parcelasRestantes||24));
-  const incc = Number(cfg.incc||0.0045);
-  const ipca = Number(cfg.ipca||0.005);
+function computeProject(p) {
+    const maxLen = 200; // limite de meses para evitar overflow
 
-  // Receipts por tipo
-  const receiptsPre = [], receiptsLaunch = [], receiptsMonthly = [];
+    // Arrays inicializadas
+    const receiptsPre = Array(maxLen).fill(0);
+    const receiptsLaunch = Array(maxLen).fill(0);
+    const receiptsMonthly = Array(maxLen).fill(0);
+    const investments = Array(maxLen).fill(0);
+    const costs = Array(maxLen).fill(0);
 
-  function addReceipt(arr, month, value){
-    if (value === 0) return;
-    const m = Math.max(0, Math.floor(month));
-    while(arr.length<=m) arr.push(0);
-    arr[m] += value;
-  }
-
-  // função que distribui o pagamento de 1 unidade (parcelas) para um array
-  function distributeUnit(saleMonth, price_unit, targetArray){
-    // pagamento no ato
-    if (pctAto > 0) addReceipt(targetArray, saleMonth, price_unit * pctAto);
-    // pagamento intermediário (na month + cfg.payInterMonth)
-    if (pctInter > 0) addReceipt(targetArray, saleMonth + (cfg.payInterMonth||0), price_unit * pctInter);
-    // pagamento de chaves (na entrega)
-    if (pctChaves > 0) addReceipt(targetArray, p.months, price_unit * pctChaves);
-    // entrada parcelada a partir do mês da venda
-    if (pctEntrada > 0 && entradaMonths > 0) {
-      const parcela = (price_unit * pctEntrada) / entradaMonths;
-      for (let m = 0; m < entradaMonths; m++) addReceipt(targetArray, saleMonth + m, parcela);
+    // Função auxiliar — adiciona receita apenas no mês "real"
+    function addReceiptReal(arr, month, value) {
+        if (!value || value <= 0) return;
+        const m = Math.max(0, month);
+        arr[m] = (arr[m] || 0) + value;
     }
-    // saldo restante parcelado
-    let restantePct = 1 - (pctAto + pctInter + pctChaves + pctEntrada);
-    restantePct = Math.max(0, restantePct);
-    const saldoTotal = price_unit * restantePct;
-    if (restParc > 0 && saldoTotal > 0) {
-      const saldoParc = saldoTotal / restParc;
-      for (let m = 0; m < restParc; m++) addReceipt(targetArray, saleMonth + entradaMonths + m, saldoParc);
+
+    // ====================================================
+    //               *** RECEITAS CORRIGIDAS ***
+    // ====================================================
+
+    // --- Pré-lançamento
+    p.pre.sales.forEach(sale => {
+        const baseMonth = p.pre.startMonth + sale.month;
+        const total = sale.units * sale.value;
+
+        const entryValue = total * (sale.entryPct / 100);
+        const restValue = total - entryValue;
+
+        const parcelaEntrada = entryValue / sale.entryMonths;
+        for (let i = 0; i < sale.entryMonths; i++) {
+            addReceiptReal(receiptsPre, baseMonth + 1 + i, parcelaEntrada);
+        }
+
+        const parcelaSaldo = restValue / sale.restMonths;
+        const inicioSaldo = baseMonth + 1 + sale.entryMonths;
+        for (let i = 0; i < sale.restMonths; i++) {
+            addReceiptReal(receiptsPre, inicioSaldo + i, parcelaSaldo);
+        }
+    });
+
+    // --- Lançamento
+    p.launch.sales.forEach(sale => {
+        const baseMonth = p.launch.startMonth + sale.month;
+        const total = sale.units * sale.value;
+
+        const entryValue = total * (sale.entryPct / 100);
+        const restValue = total - entryValue;
+
+        const parcelaEntrada = entryValue / sale.entryMonths;
+        for (let i = 0; i < sale.entryMonths; i++) {
+            addReceiptReal(receiptsLaunch, baseMonth + 1 + i, parcelaEntrada);
+        }
+
+        const parcelaSaldo = restValue / sale.restMonths;
+        const inicioSaldo = baseMonth + 1 + sale.entryMonths;
+        for (let i = 0; i < sale.restMonths; i++) {
+            addReceiptReal(receiptsLaunch, inicioSaldo + i, parcelaSaldo);
+        }
+    });
+
+    // --- Mensais
+    p.monthly.sales.forEach(sale => {
+        const baseMonth = p.monthly.startMonth + sale.month;
+        const total = sale.units * sale.value;
+
+        const entryValue = total * (sale.entryPct / 100);
+        const restValue = total - entryValue;
+
+        const parcelaEntrada = entryValue / sale.entryMonths;
+        for (let i = 0; i < sale.entryMonths; i++) {
+            addReceiptReal(receiptsMonthly, baseMonth + 1 + i, parcelaEntrada);
+        }
+
+        const parcelaSaldo = restValue / sale.restMonths;
+        const inicioSaldo = baseMonth + 1 + sale.entryMonths;
+        for (let i = 0; i < sale.restMonths; i++) {
+            addReceiptReal(receiptsMonthly, inicioSaldo + i, parcelaSaldo);
+        }
+    });
+
+    // ====================================================
+    //         *** CUSTO DA OBRA COM CURVA REAL ***
+    // ====================================================
+
+    const curve = [0.15, 0.25, 0.35, 0.25]; // curva "S"
+    const totalMonths = p.constructionMonths;
+    const blockDuration = Math.floor(totalMonths / curve.length);
+    let currentIndex = 0;
+    let remaining = totalMonths;
+
+    curve.forEach((pct, i) => {
+        const monthsInBlock = i < curve.length - 1 ? blockDuration : remaining;
+        const monthlyValue = (p.totalConstruction * pct) / monthsInBlock;
+
+        for (let m = 0; m < monthsInBlock; m++) {
+            if (currentIndex < maxLen)
+                investments[currentIndex] = monthlyValue;
+            currentIndex++;
+        }
+        remaining -= monthsInBlock;
+    });
+
+    // ====================================================
+    //                  *** CUSTOS ***
+    // ====================================================
+
+    // Comissão sobre receita efetiva
+    for (let m = 0; m < maxLen; m++) {
+        const receitaMes = receiptsPre[m] + receiptsLaunch[m] + receiptsMonthly[m];
+        costs[m] += receitaMes * (p.commissionPct / 100);
     }
-  }
 
-  function distributeUnits(units, startMonth, periodMonths, discount=0, targetArray){
-    units = Math.max(0, Math.floor(units || 0));
-    periodMonths = Math.max(1, Math.floor(periodMonths || 1));
-    for (let u = 0; u < units; u++){
-      // distribui vendas uniformemente dentro do período (0..periodMonths-1)
-      const monthOffset = Math.floor(u * periodMonths / Math.max(1, units));
-      const saleMonth = startMonth + monthOffset;
-      const price_unit = price_unit_full * (1 - (discount || 0) / 100);
-      distributeUnit(saleMonth, price_unit, targetArray);
+    // Marketing distribuído ao longo das vendas reais
+    const marketingTotal = p.marketingTotal;
+    const marketingStart = p.pre.startMonth;
+    const marketingEnd = p.launch.startMonth + p.launch.endMonth;
+
+    const marketingDuration = Math.max(1, marketingEnd - marketingStart + 1);
+    const marketingMensal = marketingTotal / marketingDuration;
+
+    for (let m = marketingStart; m <= marketingEnd; m++) {
+        costs[m] += marketingMensal;
     }
-  }
 
-  // distribuir vendas conforme parâmetros
-  distributeUnits(p.pre_launch_sales||0, 0, cfg.preLaunchMonths||1, cfg.discountPre||0, receiptsPre);
-  distributeUnits(p.launch_sales||0, cfg.preLaunchMonths||0, cfg.launchMonths||1, cfg.discountLaunch||0, receiptsLaunch);
+    // ====================================================
+    //                *** FLUXO LÍQUIDO ***
+    // ====================================================
 
-  let unitsAssigned = (p.pre_launch_sales||0) + (p.launch_sales||0);
-  let monthIdx = (cfg.preLaunchMonths||0) + (cfg.launchMonths||0);
-  while (unitsAssigned < p.units) {
-    const unitsRemaining = p.units - unitsAssigned;
-    const unitsThisMonth = Math.min(p.monthly_sales || 1, unitsRemaining);
-    distributeUnits(unitsThisMonth, monthIdx, 1, 0, receiptsMonthly);
-    unitsAssigned += unitsThisMonth;
-    monthIdx++;
-    if (monthIdx > 5000) break;
-  }
+    const net = [];
+    for (let m = 0; m < maxLen; m++) {
+        const entrada =
+            (receiptsPre[m] || 0) +
+            (receiptsLaunch[m] || 0) +
+            (receiptsMonthly[m] || 0);
 
-  // nivelar tamanhos
-  const maxLen = Math.max(receiptsPre.length, receiptsLaunch.length, receiptsMonthly.length, p.months + restParc + 6);
-  while (receiptsPre.length < maxLen) receiptsPre.push(0);
-  while (receiptsLaunch.length < maxLen) receiptsLaunch.push(0);
-  while (receiptsMonthly.length < maxLen) receiptsMonthly.push(0);
+        const saida = (investments[m] || 0) + (costs[m] || 0);
 
-  // investimentos e custos (cronograma de obra triangular como seu modelo)
-  const investments = [], costs = [], net = [];
-  const den = (p.months * (p.months + 1)) / 2;
-  for (let m = 0; m < maxLen; m++){
-    const totalReceita = (receiptsPre[m] || 0) + (receiptsLaunch[m] || 0) + (receiptsMonthly[m] || 0);
-    investments[m] = m < p.months ? (totalConstruction * ((m + 1) / den)) * Math.pow(1 + incc, m + 1) : 0;
-    let c = 0;
-    const marketingTotal = 0.015 * VGV;
-    if (m < p.months) {
-      c += marketingTotal / p.months + 8000 + 3000;
-      if (m === 11) c += 0.01 * VGV;
-      if (m === 0) c += 0.05 * totalConstruction;
-      costs[m] = c;
-    } else {
-      costs[m] = 0;
+        net[m] = entrada - saida;
     }
-    net[m] = totalReceita - (investments[m] || 0) - (costs[m] || 0);
-  }
 
-  // IRR / NPV (mantidos sobre net)
-  const irrMonthly = irr(net);
-  const irrAnnual = isFinite(irrMonthly) ? Math.pow(1 + irrMonthly, 12) - 1 : NaN;
-  const rate = Math.pow(1 + 0.12, 1 / 12) - 1;
-  const npvVal = net.reduce((s, v, i) => s + v / Math.pow(1 + rate, i), 0);
+    // ====================================================
+    //                   *** PAYBACK ***
+    // ====================================================
 
-  // ======= PAYBACK CORRETO =======
-  // acumulamos apenas o caixa efetivo recebido (receipts) e subtraímos o caixa efetivamente pago (investments + costs)
-  const cashIn = []; // receipts total por mês
-  for (let m = 0; m < maxLen; m++){
-    cashIn[m] = (receiptsPre[m] || 0) + (receiptsLaunch[m] || 0) + (receiptsMonthly[m] || 0);
-  }
-  const cashOut = []; // investimentos + custos por mês
-  for (let m = 0; m < maxLen; m++){
-    cashOut[m] = (investments[m] || 0) + (costs[m] || 0);
-  }
+    let cumul = 0;
+    let payback = '--';
 
-  let cumul = 0;
-  let payback = '--';
-  for (let m = 0; m < maxLen; m++){
-    const inM = cashIn[m] || 0;
-    const outM = cashOut[m] || 0;
-    const netM = inM - outM;
-    const prevCumul = cumul;
-    cumul += netM;
+    for (let m = 0; m < maxLen; m++) {
+        const prev = cumul;
+        cumul += net[m];
 
-    if (cumul >= 0){
-      // Se já estava negativo antes deste mês, fazemos interpolação linear dentro do mês:
-      if (prevCumul < 0 && netM > 0){
-        const frac = (0 - prevCumul) / netM; // fração do mês necessária para zerar
-        payback = +(m + frac + 1).toFixed(2); // m é 0-indexed; +1 para mês humano; arredonda 2 decimais
-      } else {
-        // payback no final do mês m (ou já estava >=0)
-        payback = m + 1;
-      }
-      break;
+        // quando muda de negativo para positivo
+        if (cumul >= 0) {
+            if (prev < 0) {
+                // interpolação dentro do mês
+                const frac = (0 - prev) / (net[m] || 1);
+                payback = +(m + frac + 1).toFixed(2);
+            } else {
+                payback = m + 1;
+            }
+            break;
+        }
     }
-  }
 
-  // se cumul nunca ficou >=0, payback permanece '--'
-  const totalNet = net.reduce((s, v) => s + v, 0);
-  const totalInvestment = investments.reduce((s, v) => s + v, 0);
-  const roi = totalInvestment === 0 ? 0 : (totalNet / totalInvestment) * 100;
-  const marketingTotal = 0.015 * VGV;
-  const brokerTotal = 0.05 * VGV;
+    // ====================================================
+    //                  *** ROI ***
+    // ====================================================
 
-  return {
-    receiptsPre,
-    receiptsLaunch,
-    receiptsMonthly,
-    net,
-    investments,
-    costs,
-    irrMonthly,
-    irrAnnual,
-    npvVal,
-    payback,
-    roi,
-    VGV,
-    totalConstruction,
-    marketingTotal,
-    brokerTotal
-  };
+    const totalReceitas = receiptsPre.reduce((a,b) => a + b, 0)
+                       + receiptsLaunch.reduce((a,b) => a + b, 0)
+                       + receiptsMonthly.reduce((a,b) => a + b, 0);
+
+    const totalCustos = investments.reduce((a,b) => a + b, 0)
+                       + costs.reduce((a,b) => a + b, 0);
+
+    const roi = totalCustos > 0 ? (totalReceitas - totalCustos) / totalCustos : 0;
+
+
+    // ====================================================
+    //                  *** VGV ***
+    // ====================================================
+    // valor geral de vendas real (somando o valor total dos contratos)
+    let VGV = 0;
+
+    p.pre.sales.forEach(s => VGV += s.units * s.value);
+    p.launch.sales.forEach(s => VGV += s.units * s.value);
+    p.monthly.sales.forEach(s => VGV += s.units * s.value);
+
+
+    // ====================================================
+    //               *** Calculo de IRR & NPV ***
+    // ====================================================
+
+    // IRR mensal — usando o fluxo net[]
+    function calcIRR(cashflow, guess = 0.01) {
+        const maxIter = 1000;
+        const precision = 1e-7;
+        let rate = guess;
+
+        for (let i = 0; i < maxIter; i++) {
+            let npv = 0;
+            let dnpv = 0;
+
+            for (let t = 0; t < cashflow.length; t++) {
+                npv += cashflow[t] / Math.pow(1 + rate, t);
+                dnpv += (-t * cashflow[t]) / Math.pow(1 + rate, t + 1);
+            }
+
+            const newRate = rate - npv / dnpv;
+
+            if (Math.abs(newRate - rate) < precision) return newRate;
+            rate = newRate;
+        }
+
+        return rate; // fallback
+    }
+
+    // IRR mensal
+    const irrMonthly = calcIRR(net);
+
+    // IRR anual
+    const irrAnnual = Math.pow(1 + irrMonthly, 12) - 1;
+
+
+    // ====================================================
+    //                    *** NPV ***
+    // ====================================================
+
+    const discountRate = 0.01; // 1% ao mês padrão (ajuste conforme sua interface)
+    let npvVal = 0;
+
+    for (let t = 0; t < net.length; t++) {
+        npvVal += net[t] / Math.pow(1 + discountRate, t);
+    }
+
+
+    // ====================================================
+    //         *** Totais de marketing e comissão ***
+    // ====================================================
+
+    const marketingTotalOut = marketingTotal;
+
+    let brokerTotal = 0;
+    for (let m = 0; m < maxLen; m++) {
+        const receitaMes = receiptsPre[m] + receiptsLaunch[m] + receiptsMonthly[m];
+        brokerTotal += receitaMes * (p.commissionPct / 100);
+    }
+
+
+    // ====================================================
+    //                *** RETORNO FINAL ***
+    // ====================================================
+
+    return {
+        receiptsPre,
+        receiptsLaunch,
+        receiptsMonthly,
+        net,
+        investments,
+        costs,
+        irrMonthly,
+        irrAnnual,
+        npvVal,
+        payback,
+        roi,
+        VGV,
+        totalConstruction: p.totalConstruction,
+        marketingTotal: marketingTotalOut,
+        brokerTotal
+    };
 }
 
 // ===== Renderização e Gráficos =====
