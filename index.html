@@ -273,10 +273,6 @@ html,body{
         <label>Correção IPCA (mensal, ex.: 0.005)</label>
         <input id="ipca" type="number" min="0" step="0.0001" value="0.005">
 
-        <hr style="border:none;border-top:1px solid rgba(255,255,255,0.03);margin:10px 0">
-
-        <div><strong>Parâmetros Adicionais</strong></div>
-
         <label>Comissão (% sobre vendas)</label>
         <input id="brokerPct" type="number" min="0" max="100" step="0.1" value="5">
 
@@ -452,7 +448,7 @@ function loadCfg(){
   const s = localStorage.getItem(cfgKey);
   if(s) try { saleCfg = Object.assign(saleCfg, JSON.parse(s)); } catch(e){}
   // campos conhecidos do HTML original — se existirem, preenche
-  ['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths','preLaunchMonths','launchMonths','incc','ipca','payAtoPct','payInterPct','payInterMonth','payChavesPct']
+  ['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths','preLaunchMonths','launchMonths','incc','ipca','payAtoPct','payInterPct','payInterMonth','payChavesPct','brokerPct','taxesPct','contingencyPct','landPct']
     .forEach(id => {
       const el = document.getElementById(id);
       if(el && typeof saleCfg[id] !== 'undefined') el.value = saleCfg[id];
@@ -474,11 +470,10 @@ function saveCfg(){
     payInterPct: Math.min(100, Math.max(0, Number(document.getElementById('payInterPct')?.value) || saleCfg.payInterPct)),
     payInterMonth: Math.max(0, Math.floor(Number(document.getElementById('payInterMonth')?.value) || saleCfg.payInterMonth)),
     payChavesPct: Math.min(100, Math.max(0, Number(document.getElementById('payChavesPct')?.value) || saleCfg.payChavesPct)),
-    // valores adicionais mais "realistas" (não presentes no layout original)
-    brokerPct: saleCfg.brokerPct,
-    taxesPct: saleCfg.taxesPct,
-    contingencyPct: saleCfg.contingencyPct,
-    landPct: saleCfg.landPct
+    brokerPct: Number(document.getElementById('brokerPct')?.value) || saleCfg.brokerPct,
+    taxesPct: Number(document.getElementById('taxesPct')?.value) || saleCfg.taxesPct,
+    contingencyPct: Number(document.getElementById('contingencyPct')?.value) || saleCfg.contingencyPct,
+    landPct: Number(document.getElementById('landPct')?.value) || saleCfg.landPct,
   };
   const soma = tmp.payAtoPct + tmp.payInterPct + tmp.payChavesPct + tmp.entradaPct;
   if(soma > 100) console.warn(`Soma dos percentuais (${soma}%) excede 100% — o restante será tratado como 0%.`);
@@ -960,9 +955,11 @@ document.getElementById('btnNew')?.addEventListener('click', ()=>{ const id = pr
 document.getElementById('btnDownloadCsv')?.addEventListener('click', downloadCsv);
 
 // salvar cfg ao alterar inputs (mantém ids originais)
-['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths','preLaunchMonths','launchMonths','incc','ipca','payAtoPct','payInterPct','payInterMonth','payChavesPct'].forEach(id=>{
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('change', saveCfg);
+['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths',
+ 'preLaunchMonths','launchMonths','incc','ipca','payAtoPct','payInterPct','payInterMonth',
+ 'payChavesPct','brokerPct','taxesPct','contingencyPct','landPct'
+].forEach(id => {
+  document.getElementById(id)?.addEventListener('change', saveCfg);
 });
 
 window.addEventListener('load', ()=>{
