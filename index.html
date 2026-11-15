@@ -535,10 +535,10 @@ function saveCfg() {
     payChavesPct: readNumber('payChavesPct', saleCfg.payChavesPct, 0, 100),
 
     // Parâmetros adicionais agora capturados diretamente dos campos
-    brokerPct: readNumber('brokerPct', saleCfg.brokerPct, 0, 100) / 100,
-    taxesPct: readNumber('taxesPct', saleCfg.taxesPct, 0, 100) / 100,
-    contingencyPct: readNumber('contingencyPct', saleCfg.contingencyPct, 0, 100) / 100,
-    landPct: readNumber('landPct', saleCfg.landPct, 0, 100) / 100,
+    brokerPct: readNumber('brokerPct', saleCfg.brokerPct * 100, 0, 100) / 100,
+    taxesPct: readNumber('taxesPct', saleCfg.taxesPct * 100, 0, 100) / 100,
+    contingencyPct: readNumber('contingencyPct', saleCfg.contingencyPct * 100, 0, 100) / 100,
+    landPct: readNumber('landPct', saleCfg.landPct * 100, 0, 100) / 100,
 
     applyProjection: !!document.getElementById('applyProjection')?.checked
   };
