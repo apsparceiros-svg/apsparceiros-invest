@@ -433,14 +433,14 @@ let saleCfg = {
   payChavesPct: 0,
   preLaunchMonths:2,
   launchMonths:3,
-  incc:0.0045,              // índice obra mensal
-  ipca:0.005,               // índice pós-obra mensal
+  incc:0.45,              // índice obra mensal
+  ipca:0.5,               // índice pós-obra mensal
   applyProjection: false,
   // parâmetros "realistas" adicionais (padrões razoáveis)
-  brokerPct:0.05,           // comissão total sobre receitas (padrão 5%)
-  taxesPct:0.06,            // impostos sobre receita (ISS + outros) exemplo 6%
-  contingencyPct:0.03,      // contingência sobre custo de obra
-  landPct:0.08              // custo do terreno como pct do VGV (apenas se desejado)
+  brokerPct:5,           // comissão total sobre receitas (padrão 5%)
+  taxesPct:6,            // impostos sobre receita (ISS + outros) exemplo 6%
+  contingencyPct:3,      // contingência sobre custo de obra
+  landPct:8              // custo do terreno como pct do VGV (apenas se desejado)
 };
 
 // ---------- Carregamento e captura de configurações ----------
@@ -535,10 +535,10 @@ function saveCfg() {
     payChavesPct: readNumber('payChavesPct', saleCfg.payChavesPct, 0, 100),
 
     // Parâmetros adicionais agora capturados diretamente dos campos
-    brokerPct: readNumber('brokerPct', saleCfg.brokerPct * 100, 0, 100) / 100,
-    taxesPct: readNumber('taxesPct', saleCfg.taxesPct * 100, 0, 100) / 100,
-    contingencyPct: readNumber('contingencyPct', saleCfg.contingencyPct * 100, 0, 100) / 100,
-    landPct: readNumber('landPct', saleCfg.landPct * 100, 0, 100) / 100,
+    brokerPct: readNumber('brokerPct', saleCfg.brokerPct, 0, 100),
+    taxesPct: readNumber('taxesPct', saleCfg.taxesPct, 0, 100),
+    contingencyPct: readNumber('contingencyPct', saleCfg.contingencyPct, 0, 100),
+    landPct: readNumber('landPct', saleCfg.landPct, 0, 100),
 
     applyProjection: !!document.getElementById('applyProjection')?.checked
   };
@@ -638,12 +638,12 @@ function computeProject(p) {
   const pctEntrada = (Number(cfg.entradaPct) || 0) / 100;
   const entradaMonths = Math.max(1, Math.floor(cfg.entradaMonths || 1));
   const restParc = Math.max(1, Math.floor(cfg.parcelasRestantes || 24));
-  const incc = Number(cfg.incc || 0.0045);
-  const ipca = Number(cfg.ipca || 0.005);
-  const brokerPct = Number(cfg.brokerPct || 0.05);
-  const taxesPct = Number(cfg.taxesPct || 0.06);
-  const contingencyPct = Number(cfg.contingencyPct || 0.03);
-  const landPct = Number(cfg.landPct || 0.08);
+  const incc = Number(cfg.incc || 0.45) / 100;
+  const ipca = Number(cfg.ipca || 0.5) / 100;
+  const brokerPct = Number(cfg.brokerPct || 5) / 100;
+  const taxesPct = Number(cfg.taxesPct || 6) / 100;
+  const contingencyPct = Number(cfg.contingencyPct || 3) / 100;
+  const landPct = Number(cfg.landPct || 8) / 100;
 
   // helpers de indexação: aplica INCC entre venda e entrega, e IPCA depois da entrega
   function indexFromSaleToPayment(amount, saleMonth, paymentMonth) {
