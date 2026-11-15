@@ -443,44 +443,136 @@ let saleCfg = {
   landPct:0.08              // custo do terreno como pct do VGV (apenas se desejado)
 };
 
-// Carrega configuração para inputs existentes sem quebrar se inputs novos não existirem
-function loadCfg(){
-  const s = localStorage.getItem(cfgKey);
-  if(s) try { saleCfg = Object.assign(saleCfg, JSON.parse(s)); } catch(e){}
-  // campos conhecidos do HTML original — se existirem, preenche
-  ['discountPre','discountLaunch','parcelasRestantes','entradaPct','entradaMonths','preLaunchMonths','launchMonths','incc','ipca','payAtoPct','payInterPct','payInterMonth','payChavesPct']
-    .forEach(id => {
-      const el = document.getElementById(id);
-      if(el && typeof saleCfg[id] !== 'undefined') el.value = saleCfg[id];
-    });
+// ---------- Carregamento e captura de configurações ----------
+const cfgFields = [
+  'discountPre',
+  'discountLaunch',
+  'parcelasRestantes',
+  'entradaPct',
+  'entradaMonths',
+  'preLaunchMonths',
+  'launchMonths',
+  'incc',
+  'ipca',
+  'payAtoPct',
+  'payInterPct',
+  'payInterMonth',
+  'payChavesPct',
+  'brokerPct',
+  'taxesPct',
+  'contingencyPct',
+  'landPct'
+];
+
+function loadCfg() {
+  const saved = localStorage.getItem(cfgKey);
+
+  if (saved) {
+    try {
+      saleCfg = Object.assign(saleCfg, JSON.parse(saved));
+    } catch (e) {
+      console.warn('Erro ao carregar configurações:', e);
+    }
+  }
+
+  cfgFields.forEach(id => {
+    const el = document.getElementById(id);
+
+    if (el && saleCfg[id] !== undefined) {
+      el.value = saleCfg[id];
+    }
+  });
+
+  const projection = document.getElementById('applyProjection');
+
+  if (projection) {
+    projection.checked = !!saleCfg.applyProjection;
+  }
 }
 
-function saveCfg(){
+// Captura os valores diretamente dos campos
+function saveCfg() {
+
+  function readNumber(id, fallback, min = 0, max = Infinity, integer = false) {
+    const el = document.getElementById(id);
+
+    if (!el) return fallback;
+
+    // Campo vazio recebe zero; não confundir zero com ausência de valor
+    const raw = el.value.trim();
+
+    if (raw === '') return 0;
+
+    let value = Number(raw);
+
+    if (!Number.isFinite(value)) return fallback;
+
+    value = Math.max(min, Math.min(max, value));
+
+    if (integer) value = Math.floor(value);
+
+    return value;
+  }
+
   const tmp = {
-    discountPre: Number(document.getElementById('discountPre')?.value) || saleCfg.discountPre,
-    discountLaunch: Number(document.getElementById('discountLaunch')?.value) || saleCfg.discountLaunch,
-    parcelasRestantes: Math.max(1, Math.floor(Number(document.getElementById('parcelasRestantes')?.value) || saleCfg.parcelasRestantes)),
-    entradaPct: Math.min(100, Math.max(0, Number(document.getElementById('entradaPct')?.value) || saleCfg.entradaPct)),
-    entradaMonths: Math.max(1, Math.floor(Number(document.getElementById('entradaMonths')?.value) || saleCfg.entradaMonths)),
-    preLaunchMonths: Math.max(1, Math.floor(Number(document.getElementById('preLaunchMonths')?.value) || saleCfg.preLaunchMonths)),
-    launchMonths: Math.max(1, Math.floor(Number(document.getElementById('launchMonths')?.value) || saleCfg.launchMonths)),
-    incc: Number(document.getElementById('incc')?.value) || saleCfg.incc,
-    ipca: Number(document.getElementById('ipca')?.value) || saleCfg.ipca,
-    payAtoPct: Math.min(100, Math.max(0, Number(document.getElementById('payAtoPct')?.value) || saleCfg.payAtoPct)),
-    payInterPct: Math.min(100, Math.max(0, Number(document.getElementById('payInterPct')?.value) || saleCfg.payInterPct)),
-    payInterMonth: Math.max(0, Math.floor(Number(document.getElementById('payInterMonth')?.value) || saleCfg.payInterMonth)),
-    payChavesPct: Math.min(100, Math.max(0, Number(document.getElementById('payChavesPct')?.value) || saleCfg.payChavesPct)),
-    // valores adicionais mais "realistas" (não presentes no layout original)
-    brokerPct: saleCfg.brokerPct,
-    taxesPct: saleCfg.taxesPct,
-    contingencyPct: saleCfg.contingencyPct,
-    landPct: saleCfg.landPct
+    discountPre: readNumber('discountPre', saleCfg.discountPre, 0, 100),
+    discountLaunch: readNumber('discountLaunch', saleCfg.discountLaunch, 0, 100),
+
+    parcelasRestantes: readNumber('parcelasRestantes', saleCfg.parcelasRestantes, 1, Infinity, true),
+
+    entradaPct: readNumber('entradaPct', saleCfg.entradaPct, 0, 100),
+    entradaMonths: readNumber('entradaMonths', saleCfg.entradaMonths, 1, Infinity, true),
+
+    preLaunchMonths: readNumber('preLaunchMonths', saleCfg.preLaunchMonths, 1, Infinity, true),
+    launchMonths: readNumber('launchMonths', saleCfg.launchMonths, 1, Infinity, true),
+
+    incc: readNumber('incc', saleCfg.incc),
+    ipca: readNumber('ipca', saleCfg.ipca),
+
+    payAtoPct: readNumber('payAtoPct', saleCfg.payAtoPct, 0, 100),
+    payInterPct: readNumber('payInterPct', saleCfg.payInterPct, 0, 100),
+    payInterMonth: readNumber('payInterMonth', saleCfg.payInterMonth, 0, Infinity, true),
+    payChavesPct: readNumber('payChavesPct', saleCfg.payChavesPct, 0, 100),
+
+    // Parâmetros adicionais agora capturados diretamente dos campos
+    brokerPct: readNumber('brokerPct', saleCfg.brokerPct, 0, 100) / 100,
+    taxesPct: readNumber('taxesPct', saleCfg.taxesPct, 0, 100) / 100,
+    contingencyPct: readNumber('contingencyPct', saleCfg.contingencyPct, 0, 100) / 100,
+    landPct: readNumber('landPct', saleCfg.landPct, 0, 100) / 100,
+
+    applyProjection: !!document.getElementById('applyProjection')?.checked
   };
-  const soma = tmp.payAtoPct + tmp.payInterPct + tmp.payChavesPct + tmp.entradaPct;
-  if(soma > 100) console.warn(`Soma dos percentuais (${soma}%) excede 100% — o restante será tratado como 0%.`);
+
+  // Atualiza a configuração central
   Object.assign(saleCfg, tmp);
+
+  const soma =
+    tmp.payAtoPct +
+    tmp.payInterPct +
+    tmp.payChavesPct +
+    tmp.entradaPct;
+
+  if (soma > 100) {
+    console.warn(`A soma dos pagamentos é ${soma}%. O saldo restante será zero.`);
+  }
+
+  // Salva as configurações
   localStorage.setItem(cfgKey, JSON.stringify(saleCfg));
+
+  // Atualiza os indicadores e gráficos
   renderSidebar();
+
+  // Atualiza o modal aberto, caso exista
+  const modal = document.getElementById('detailModal');
+
+  if (modal?.style.display === 'flex') {
+    const title = document.getElementById('modalTitle')?.innerText;
+    const project = projects.find(p => p.name === title);
+
+    if (project) {
+      openProjectModal(project.id);
+    }
+  }
 }
 
 // ---------- Utilitárias ----------
@@ -1003,10 +1095,20 @@ document.getElementById('btnDownloadCsv')?.addEventListener('click', downloadCsv
   if (el) el.addEventListener('change', saveCfg);
 });
 
-window.addEventListener('load', ()=>{
-  const saved = localStorage.getItem('aps_projects');
-  if(saved) try { projects = JSON.parse(saved); } catch(e){}
-  loadCfg();
+// ---------- Atualização automática de todas as configurações ----------
+
+cfgFields.concat(['applyProjection']).forEach(id => {
+
+  const el = document.getElementById(id);
+
+  if (!el) return;
+
+  // Atualiza enquanto o usuário digita ou altera o valor
+  el.addEventListener('input', saveCfg);
+
+  // Garante atualização ao sair do campo
+  el.addEventListener('change', saveCfg);
+
 });
   
 </script>
