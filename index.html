@@ -268,10 +268,10 @@ html,body{
         <input id="payChavesPct" type="number" min="0" max="100" step="0.1" value="0">
 
         <label>Correção INCC (mensal, ex.: 0.0045)</label>
-        <input id="incc" type="number" min="0" step="0.0001" value="0.0045">
+        <input id="incc" type="number" min="0" step="0.1" value="0.45">
         
         <label>Correção IPCA (mensal, ex.: 0.005)</label>
-        <input id="ipca" type="number" min="0" step="0.0001" value="0.005">
+        <input id="ipca" type="number" min="0" step="0.1" value="0.5">
 
         <label>Comissão (% sobre vendas)</label>
         <input id="brokerPct" type="number" min="0" max="100" step="0.1" value="5">
@@ -526,8 +526,8 @@ function saveCfg() {
     preLaunchMonths: readNumber('preLaunchMonths', saleCfg.preLaunchMonths, 1, Infinity, true),
     launchMonths: readNumber('launchMonths', saleCfg.launchMonths, 1, Infinity, true),
 
-    incc: readNumber('incc', saleCfg.incc),
-    ipca: readNumber('ipca', saleCfg.ipca),
+    incc: readNumber('incc', saleCfg.incc, 0, 100),
+    ipca: readNumber('ipca', saleCfg.ipca, 0, 100),
 
     payAtoPct: readNumber('payAtoPct', saleCfg.payAtoPct, 0, 100),
     payInterPct: readNumber('payInterPct', saleCfg.payInterPct, 0, 100),
